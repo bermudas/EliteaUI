@@ -52,6 +52,7 @@ import {
   VITE_DEV_TOKEN,
   VITE_SERVER_URL,
 } from '@/common/constants';
+import { clearBaseUrlPrefix } from '@/common/utils';
 import RouteChangeResetSearch from '@/components/RouteChangeResetSearch';
 import UnsavedDialog from '@/components/UnsavedDialog';
 import { PageTitleSetter } from '@/hooks/useBrowserPageTitle';
@@ -540,7 +541,7 @@ const AppLayout = () => {
       {showEliteaAssistant && (
         <EliteaAssistant
           ref={assistantRef}
-          apiUrl={`${VITE_SERVER_URL}support_assistant`}
+          apiUrl={`${clearBaseUrlPrefix(VITE_SERVER_URL)}/support_assistant`}
           token={DEV ? VITE_DEV_TOKEN : undefined}
           withCredentials={!DEV}
           position="bottom-left"
