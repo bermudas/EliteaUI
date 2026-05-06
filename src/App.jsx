@@ -48,6 +48,8 @@ import {
   SIDE_BAR_WIDTH,
   ToolkitsTabs,
   UserProfileTabs,
+  VITE_DEV_TOKEN,
+  VITE_SERVER_URL,
 } from '@/common/constants';
 import RouteChangeResetSearch from '@/components/RouteChangeResetSearch';
 import UnsavedDialog from '@/components/UnsavedDialog';
@@ -537,8 +539,8 @@ const AppLayout = () => {
       {showEliteaAssistant && (
         <EliteaAssistant
           ref={assistantRef}
-          apiUrl="https://dev.elitea.ai"
-          token="test-token"
+          apiUrl={`${VITE_SERVER_URL}support_assistant`}
+          token={VITE_DEV_TOKEN}
           position="bottom-left"
           theme={theme.palette.mode}
         />
