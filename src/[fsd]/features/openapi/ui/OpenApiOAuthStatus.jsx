@@ -2,13 +2,13 @@ import { memo, useCallback, useMemo, useState } from 'react';
 
 import { useFormikContext } from 'formik';
 
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 import { McpAuthHelpers } from '@/[fsd]/features/mcp/lib/helpers';
 import { useConfigOAuthModal, useMcpTokenChange } from '@/[fsd]/features/mcp/lib/hooks';
 import { McpAuthModal, McpLogoutModal } from '@/[fsd]/features/mcp/ui';
-import { useOpenApiCheckConnection } from '@/[fsd]/features/openapi/lib/hooks/useOpenApiCheckConnection.hooks';
-import { useResolvedOpenApiConfig } from '@/[fsd]/features/openapi/lib/hooks/useResolvedOpenApiConfig.hooks';
+import { useOpenApiCheckConnection, useResolvedOpenApiConfig } from '@/[fsd]/features/openapi/lib/hooks';
+import BaseBtn from '@/[fsd]/shared/ui/button/BaseBtn';
 import OnlineIcon from '@/assets/online-icon.svg?react';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
 import useToast from '@/hooks/useToast';
@@ -44,17 +44,12 @@ const OpenApiOAuthStatus = memo(() => {
   const { isLoggedIn: isOAuthLoggedIn } = useMcpTokenChange({ serverUrl: tokenKey });
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const credentials = isReferenceMode
-    ? {
-        client_id: openApiConfig?.client_id,
-        client_secret: openApiConfig?.client_secret,
-        scopes: openApiConfig?.scope,
-      }
-    : {
-        client_id: directSettings.client_id,
-        client_secret: directSettings.client_secret,
-        scopes: directSettings.scope,
-      };
+  const config = isReferenceMode ? openApiConfig : directSettings;
+  const credentials = {
+    client_id: config?.client_id,
+    client_secret: config?.client_secret,
+    scopes: config?.scope,
+  };
 
   const configOAuth = useConfigOAuthModal({ credentials });
 
@@ -96,13 +91,13 @@ const OpenApiOAuthStatus = memo(() => {
             {isOAuthLoggedIn ? 'Connected!' : 'Not Connected'}
           </Typography>
         </Box>
-        <Button
+        <BaseBtn
           onClick={isOAuthLoggedIn ? onLogout : onLogin}
           disabled={isRunning}
           variant="secondary"
         >
           {isOAuthLoggedIn ? 'Logout' : isRunning ? 'Logging in...' : 'Login'}
-        </Button>
+        </BaseBtn>
       </Box>
       <McpAuthModal {...authModalProps} />
       <McpLogoutModal

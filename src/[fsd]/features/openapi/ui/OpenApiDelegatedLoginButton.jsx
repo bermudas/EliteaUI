@@ -1,10 +1,11 @@
 import { memo, useCallback, useMemo } from 'react';
 
-import { Box, Button, Tooltip } from '@mui/material';
+import { Box, Tooltip } from '@mui/material';
 
 import { useConfigOAuthModal, useMcpTokenChange } from '@/[fsd]/features/mcp/lib/hooks';
 import { McpAuthModal } from '@/[fsd]/features/mcp/ui';
-import { useOpenApiCheckConnection } from '@/[fsd]/features/openapi/lib/hooks/useOpenApiCheckConnection.hooks';
+import { useOpenApiCheckConnection } from '@/[fsd]/features/openapi/lib/hooks';
+import BaseBtn from '@/[fsd]/shared/ui/button/BaseBtn';
 import OfflineIcon from '@/assets/offline-icon.svg?react';
 import OnlineIcon from '@/assets/online-icon.svg?react';
 
@@ -45,16 +46,15 @@ const OpenApiDelegatedLoginButton = memo(props => {
       >
         <Box sx={styles.statusIconBox(isOAuthLoggedIn)}>
           {!isOAuthLoggedIn && (
-            <Button
-              variant="elitea"
-              color="tertiary"
+            <BaseBtn
+              variant="tertiary"
               size="small"
               onClick={onLogin}
               disabled={isRunning}
               sx={styles.loginText}
             >
               Log in
-            </Button>
+            </BaseBtn>
           )}
           {isOAuthLoggedIn ? (
             <OnlineIcon style={styles.statusIcon} />
