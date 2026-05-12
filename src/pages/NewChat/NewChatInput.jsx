@@ -4,6 +4,7 @@ import { Box, IconButton } from '@mui/material';
 
 import UserInput from '@/ComponentsLib/Chat/UserInput';
 import Tooltip from '@/ComponentsLib/Tooltip';
+import { useSpeakingModeLoop } from '@/[fsd]/features/chat/lib/hooks';
 import { ChatButton } from '@/[fsd]/features/chat/ui';
 import { LLMModelSelector } from '@/[fsd]/widgets/LLMModelSelector';
 import ChatBotIcon from '@/assets/chatbot-icon.svg?react';
@@ -80,6 +81,11 @@ const NewChatInput = forwardRef((props, ref) => {
     projectId,
 
     slashHighlights = [],
+
+    // Speaking mode
+    isSpeakingMode = false,
+    onSpeakingModeToggle,
+    isTTSPlaying = false,
   } = props;
   const theme = useTheme();
   const { toastError } = useToast();
@@ -89,8 +95,25 @@ const NewChatInput = forwardRef((props, ref) => {
   const voiceButtonRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
 
+  const { isRecording: isSpeakingModeRecording } = useSpeakingModeLoop({
+    isSpeakingMode,
+    inputRef: userInputRef,
+    isStreaming,
+    isTTSPlaying,
+  });
+
   // Forward the same imperative handle the outer caller expects from UserInput
   useImperativeHandle(ref, () => userInputRef.current, []);
+
+  const handleVoiceRecordingChange = useCallback(
+    recording => {
+      setIsRecording(recording);
+      if (recording && isSpeakingMode) {
+        onSpeakingModeToggle?.();
+      }
+    },
+    [isSpeakingMode, onSpeakingModeToggle],
+  );
 
   const handleSend = useCallback(
     (question, inputContent) => {
@@ -201,8 +224,8 @@ const NewChatInput = forwardRef((props, ref) => {
               <ChatButton.VoiceButton
                 ref={voiceButtonRef}
                 inputRef={userInputRef}
-                disabled={isLoading || isStreaming}
-                onRecordingChange={setIsRecording}
+                disabled={isLoading || isStreaming || isSpeakingMode}
+                onRecordingChange={handleVoiceRecordingChange}
               />
             </Box>
             <Box
@@ -304,7 +327,7 @@ const NewChatInput = forwardRef((props, ref) => {
           onDrop,
         },
         input: {
-          placeholder: isRecording ? 'Speak your message' : placeholder,
+          placeholder: isRecording || isSpeakingMode ? 'Speak your message' : placeholder,
           color: theme.palette.text.secondary,
           iconColor: theme.palette.icon.fill.default,
         },
@@ -336,7 +359,10 @@ const NewChatInput = forwardRef((props, ref) => {
       onFilePaste={handleFilePaste}
       isUploadingAttachments={isUploadingAttachments}
       uploadProgress={uploadProgress}
-      isRecording={isRecording}
+      isRecording={isRecording || isSpeakingModeRecording}
+      isSpeakingMode={isSpeakingMode}
+      onEnterSpeakingMode={onSpeakingModeToggle}
+      onExitSpeakingMode={onSpeakingModeToggle}
       ref={userInputRef}
     />
   );
