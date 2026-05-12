@@ -32,7 +32,7 @@ const generateSecretToken = () => {
 const WEBHOOK_TYPE_DESCRIPTIONS = {
   github: 'Uses x-hub-signature-256 header with HMAC-SHA256 signature',
   gitlab: 'Uses x-gitlab-token header with secret token',
-  custom: 'Uses custom header format: header_name:secret_value',
+  custom: 'Uses X-Webhook-Token header with secret token',
 };
 
 const buildExampleRequest = (webhookType, webhookUrl, secretValue, secretHeader, showSecret) => {
@@ -225,21 +225,6 @@ const PipelineWebhookModal = props => {
 
           {secretValue && (
             <Box sx={styles.section}>
-              {secretHeader && (
-                <>
-                  <Typography
-                    variant="labelMedium"
-                    sx={styles.sectionLabel}
-                  >
-                    Header Name
-                  </Typography>
-                  <FormInput
-                    value={secretHeader}
-                    readOnly
-                    sx={styles.urlInput}
-                  />
-                </>
-              )}
               <Typography
                 variant="labelMedium"
                 sx={styles.sectionLabel}

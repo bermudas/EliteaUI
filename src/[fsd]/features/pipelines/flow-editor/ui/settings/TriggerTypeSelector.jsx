@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useFormikContext } from 'formik';
 
@@ -6,6 +6,8 @@ import LinkIcon from '@mui/icons-material/Link';
 import { Box, IconButton } from '@mui/material';
 
 import Tooltip from '@/ComponentsLib/Tooltip';
+import { FlowEditorContext } from '@/[fsd]/app/providers';
+import { PipelineNodeTypes } from '@/[fsd]/features/pipelines/flow-editor/lib/constants/flowEditor.constants';
 import { InfoLabelWithTooltip } from '@/[fsd]/shared/ui/label';
 import { SingleSelect } from '@/[fsd]/shared/ui/select';
 import { useGetPipelineTriggerQuery, useUpdatePipelineTriggerMutation } from '@/api/applications';
@@ -15,6 +17,9 @@ import useToast from '@/hooks/useToast';
 
 import PipelineScheduleModal from './PipelineScheduleModal';
 import PipelineWebhookModal from './PipelineWebhookModal';
+
+// Node types that require user interaction and thus only support Chat Message trigger
+const INTERACTIVE_NODE_TYPES = [PipelineNodeTypes.Hitl, PipelineNodeTypes.Printer];
 
 // Trigger types
 export const TRIGGER_TYPES = {
@@ -43,9 +48,35 @@ const TriggerTypeSelector = memo(props => {
   const { toastSuccess, toastError } = useToast();
   const selectedProject = useSelectedProject();
   const { values } = useFormikContext();
+  const { yamlJsonObject } = useContext(FlowEditorContext);
 
   const versionId = values?.version_details?.id;
   const projectId = selectedProject?.id;
+
+  // Check if pipeline has interactive nodes or interrupts that require Chat Message trigger
+  const hasInteractiveElements = useMemo(() => {
+    if (!yamlJsonObject) return false;
+
+    // Check for HITL or Printer nodes
+    const hasInteractiveNodes = yamlJsonObject.nodes?.some(node =>
+      INTERACTIVE_NODE_TYPES.includes(node.type),
+    );
+
+    // Check for interrupt_before or interrupt_after
+    const hasInterrupts =
+      (Array.isArray(yamlJsonObject.interrupt_before) && yamlJsonObject.interrupt_before.length > 0) ||
+      (Array.isArray(yamlJsonObject.interrupt_after) && yamlJsonObject.interrupt_after.length > 0);
+
+    return hasInteractiveNodes || hasInterrupts;
+  }, [yamlJsonObject]);
+
+  // Filter trigger options based on pipeline content
+  const availableTriggerOptions = useMemo(() => {
+    if (hasInteractiveElements) {
+      return TRIGGER_OPTIONS.filter(opt => opt.value === TRIGGER_TYPES.chat_message);
+    }
+    return TRIGGER_OPTIONS;
+  }, [hasInteractiveElements]);
 
   // State for schedule modal
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -65,6 +96,43 @@ const TriggerTypeSelector = memo(props => {
     () => triggerData?.type || TRIGGER_TYPES.chat_message,
     [triggerData?.type],
   );
+
+  // Track previous hasInteractiveElements to detect when it changes from false to true
+  const prevHasInteractiveRef = useRef(hasInteractiveElements);
+
+  // Auto-reset to Chat Message when interactive elements are added to a pipeline with incompatible trigger
+  useEffect(() => {
+    const wasNotInteractive = !prevHasInteractiveRef.current;
+    const isNowInteractive = hasInteractiveElements;
+    const hasIncompatibleTrigger =
+      currentTriggerType === TRIGGER_TYPES.schedule || currentTriggerType === TRIGGER_TYPES.webhook;
+
+    // Only reset if: became interactive AND has incompatible trigger AND we can make the API call
+    if (wasNotInteractive && isNowInteractive && hasIncompatibleTrigger && projectId && versionId) {
+      updateTrigger({
+        projectId,
+        versionId,
+        type: TRIGGER_TYPES.chat_message,
+      })
+        .unwrap()
+        .then(() => {
+          toastSuccess('Trigger reset to Chat Message (pipeline now contains interactive elements)');
+        })
+        .catch(() => {
+          toastError('Failed to reset trigger');
+        });
+    }
+
+    prevHasInteractiveRef.current = hasInteractiveElements;
+  }, [
+    hasInteractiveElements,
+    currentTriggerType,
+    projectId,
+    versionId,
+    updateTrigger,
+    toastSuccess,
+    toastError,
+  ]);
 
   const currentCron = useMemo(() => triggerData?.cron || '0 0 * * 6', [triggerData?.cron]);
 
@@ -196,8 +264,15 @@ const TriggerTypeSelector = memo(props => {
 
   const isLoading = isFetching || isUpdating;
 
-  const triggerTooltip =
-    'Choose how this pipeline is triggered.\n* Chat Message (default) requires user input.\n* Schedule runs automatically based on a cron expression.\n* Webhook allows external systems to trigger the pipeline via HTTP POST.';
+  const triggerTooltip = useMemo(() => {
+    const baseTooltip =
+      'Choose how this pipeline is triggered.\n• Chat Message (default) requires user input.\n• Schedule runs automatically based on a cron expression.\n• Webhook allows external systems to trigger the pipeline via HTTP POST.';
+
+    if (hasInteractiveElements) {
+      return `${baseTooltip}\n\nNote: This pipeline contains HITL, Printer nodes, or interrupts that require user interaction. Only Chat Message trigger is available.`;
+    }
+    return baseTooltip;
+  }, [hasInteractiveElements]);
 
   return (
     <Box sx={styles.container}>
@@ -214,7 +289,7 @@ const TriggerTypeSelector = memo(props => {
           sx={styles.select}
           value={currentTriggerType}
           onValueChange={handleTriggerTypeChange}
-          options={TRIGGER_OPTIONS}
+          options={availableTriggerOptions}
           disabled={disabled || isLoading}
           showBorder
           className="nopan nodrag"
