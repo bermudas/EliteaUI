@@ -8,9 +8,22 @@ import { ConfigurationModal } from '@/[fsd]/features/agent/ui/agent-details/conf
 import { AccordionConstants } from '@/[fsd]/shared/lib/constants';
 import BasicAccordion from '@/[fsd]/shared/ui/accordion/BasicAccordion';
 import { CopyToClipboardButton } from '@/[fsd]/shared/ui/button';
-import { useForkedFromApplicationDetailsQuery } from '@/api/applications';
+import { useForkedFromApplicationDetailsQuery, useGetPipelineTriggerQuery } from '@/api/applications';
 import { buildForkedEntityHref, capitalizeFirstChar } from '@/common/utils.jsx';
 import { LabelLinkWithToolTip } from '@/components/Fork/LabelLinkWithToolTip.jsx';
+import { useSelectedProject } from '@/hooks/useSelectedProject';
+
+const TRIGGER_TYPE_LABELS = {
+  chat_message: 'Chat Message',
+  schedule: 'Schedule',
+  webhook: 'Webhook',
+};
+
+const WEBHOOK_TYPE_LABELS = {
+  github: 'GitHub',
+  gitlab: 'GitLab',
+  custom: 'Custom',
+};
 
 const ApplicationInformation = memo(props => {
   const { style, showPipeline = false } = props;
@@ -34,10 +47,19 @@ const ApplicationInformation = memo(props => {
   const entityType = version_details?.agent_type === 'pipeline' ? 'pipeline' : 'agent';
   const agentType = `${entityType}s`;
   const entityTitle = capitalizeFirstChar(entityType);
+  const isPipeline = entityType === 'pipeline';
+
+  const selectedProject = useSelectedProject();
+  const projectId = selectedProject?.id;
 
   const { data: originalApplicationDetails, error } = useForkedFromApplicationDetailsQuery(
     { projectId: meta?.parent_project_id, applicationId: meta?.parent_entity_id },
     { skip: !meta?.parent_project_id || !meta?.parent_entity_id || !isForked },
+  );
+
+  const { data: triggerData } = useGetPipelineTriggerQuery(
+    { projectId, versionId },
+    { skip: !isPipeline || !projectId || !versionId },
   );
 
   const [showPipelineModal, setShowPipelineModal] = useState(false);
@@ -69,6 +91,48 @@ const ApplicationInformation = memo(props => {
                 tooltip="Copy version ID"
                 copyMessage="The version ID has been copied to the clipboard"
               />
+            )}
+            {isPipeline && triggerData?.type && (
+              <Box sx={styles.pipelineLink}>
+                <Typography variant="bodyMedium">Trigger:</Typography>
+                <Typography variant="bodyMedium">
+                  {TRIGGER_TYPE_LABELS[triggerData.type] || triggerData.type}
+                </Typography>
+              </Box>
+            )}
+            {isPipeline && triggerData?.type === 'schedule' && triggerData?.cron && (
+              <CopyToClipboardButton
+                label="Schedule:"
+                value={triggerData.cron}
+                tooltip="Copy cron expression"
+                copyMessage="The cron expression has been copied to the clipboard"
+              />
+            )}
+            {isPipeline && triggerData?.type === 'schedule' && triggerData?.timezone && (
+              <Box sx={styles.pipelineLink}>
+                <Typography variant="bodyMedium">Timezone:</Typography>
+                <Typography variant="bodyMedium">{triggerData.timezone}</Typography>
+              </Box>
+            )}
+            {isPipeline && triggerData?.type === 'schedule' && triggerData?.last_run && (
+              <Box sx={styles.pipelineLink}>
+                <Typography variant="bodyMedium">Last run:</Typography>
+                <Typography variant="bodyMedium">
+                  {new Intl.DateTimeFormat(undefined, {
+                    timeZone: triggerData.timezone || undefined,
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  }).format(new Date(triggerData.last_run))}
+                </Typography>
+              </Box>
+            )}
+            {isPipeline && triggerData?.type === 'webhook' && triggerData?.webhook_type && (
+              <Box sx={styles.pipelineLink}>
+                <Typography variant="bodyMedium">Webhook type:</Typography>
+                <Typography variant="bodyMedium">
+                  {WEBHOOK_TYPE_LABELS[triggerData.webhook_type] || triggerData.webhook_type}
+                </Typography>
+              </Box>
             )}
             {isForked && (
               <LabelLinkWithToolTip
@@ -109,6 +173,12 @@ const ApplicationInformation = memo(props => {
       agentType,
       meta,
       showPipeline,
+      isPipeline,
+      triggerData?.type,
+      triggerData?.cron,
+      triggerData?.timezone,
+      triggerData?.last_run,
+      triggerData?.webhook_type,
       styles.contentContainer,
       styles.pipelineLink,
       styles.showLink,
