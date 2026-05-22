@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react';
 
 import { useMatch } from 'react-router-dom';
 
+import { SIDEBAR_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
 import ConfigurationIcon from '@/assets/gear-icon.svg?react';
 import RouteDefinitions from '@/routes';
 
@@ -22,6 +23,7 @@ const SettingsButton = memo(props => {
       icon={<ConfigurationIcon sx={styles.icon} />}
       label="Settings"
       tooltip="Settings"
+      tourId={SIDEBAR_TOUR_TARGET_IDS.settings}
       onClick={handleSettingsClick}
       isActive={!!isOnSettings}
     />

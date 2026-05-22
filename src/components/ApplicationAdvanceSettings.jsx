@@ -4,6 +4,7 @@ import { useFormikContext } from 'formik';
 
 import { Box } from '@mui/material';
 
+import { AGENT_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
 import { AccordionConstants } from '@/[fsd]/shared/lib/constants';
 import { Label } from '@/[fsd]/shared/ui';
 import BasicAccordion from '@/[fsd]/shared/ui/accordion/BasicAccordion';
@@ -81,7 +82,10 @@ const ApplicationAdvanceSettings = memo(props => {
       {
         title: 'Advanced',
         content: (
-          <Box sx={styles.fieldContainer}>
+          <Box
+            sx={styles.fieldContainer}
+            data-tour={AGENT_TOUR_TARGET_IDS.advancedSettings}
+          >
             <FormInput
               value={version_details?.meta?.step_limit ?? ''}
               onChange={handleChange}

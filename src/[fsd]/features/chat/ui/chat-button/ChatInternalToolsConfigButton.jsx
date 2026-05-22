@@ -3,6 +3,7 @@ import React, { memo, useRef, useState } from 'react';
 import { ClickAwayListener, IconButton, Paper, Popper } from '@mui/material';
 
 import Tooltip from '@/ComponentsLib/Tooltip';
+import { CHAT_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
 import { useAvailableInternalTools } from '@/[fsd]/shared/lib/hooks';
 import { Switch, Text } from '@/[fsd]/shared/ui';
 import ValueIcon from '@/assets/value-icon.svg?react';
@@ -42,7 +43,10 @@ const ChatInternalToolsConfigButton = memo(props => {
 
   return (
     <>
-      <Tooltip title="Enable internal tools">
+      <Tooltip
+        title="Enable internal tools"
+        data-tour={CHAT_TOUR_TARGET_IDS.internalTools}
+      >
         <IconButton
           ref={buttonRef}
           variant="elitea"

@@ -6,6 +6,7 @@ import { useMatch } from 'react-router-dom';
 import { Box, Typography, useTheme } from '@mui/material';
 
 import StyledTooltip from '@/ComponentsLib/Tooltip';
+import { SIDEBAR_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
 import LogoutIcon from '@/assets/logout-icon.svg?react';
 import UserIcon from '@/assets/personalization-icon.svg?react';
 import DotMenu from '@/components/DotMenu';
@@ -77,47 +78,49 @@ const UserButton = memo(props => {
   );
 
   return (
-    <DotMenu
-      id="user-menu"
-      slotProps={slotProps}
-      menuStyle={styles.menuStyle}
-      anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'left',
-      }}
-      menuIconSX={styles.menuIconSX(theme)}
-      menuIcon={
-        <StyledTooltip
-          placement="right"
-          title={sideBarCollapsed ? 'User profile' : ''}
-          enterDelay={500}
-          enterNextDelay={500}
-        >
-          <Box sx={styles.menuIconContainer}>
-            <UserAvatar
-              avatar={avatar}
-              name={name}
-              size={16}
-            />
-            {!sideBarCollapsed && (
-              <Typography
-                variant="labelSmall"
-                sx={styles.typography}
-              >
-                {name}
-              </Typography>
-            )}
-            {!sideBarCollapsed && <ArrowRightIcon style={styles.arrowIcon} />}
-          </Box>
-        </StyledTooltip>
-      }
-    >
-      {menuItems}
-    </DotMenu>
+    <Box data-tour={SIDEBAR_TOUR_TARGET_IDS.user}>
+      <DotMenu
+        id="user-menu"
+        slotProps={slotProps}
+        menuStyle={styles.menuStyle}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        menuIconSX={styles.menuIconSX(theme)}
+        menuIcon={
+          <StyledTooltip
+            placement="right"
+            title={sideBarCollapsed ? 'User profile' : ''}
+            enterDelay={500}
+            enterNextDelay={500}
+          >
+            <Box sx={styles.menuIconContainer}>
+              <UserAvatar
+                avatar={avatar}
+                name={name}
+                size={16}
+              />
+              {!sideBarCollapsed && (
+                <Typography
+                  variant="labelSmall"
+                  sx={styles.typography}
+                >
+                  {name}
+                </Typography>
+              )}
+              {!sideBarCollapsed && <ArrowRightIcon style={styles.arrowIcon} />}
+            </Box>
+          </StyledTooltip>
+        }
+      >
+        {menuItems}
+      </DotMenu>
+    </Box>
   );
 });
 

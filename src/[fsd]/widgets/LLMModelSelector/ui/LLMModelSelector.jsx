@@ -28,6 +28,7 @@ const LLMModelSelector = memo(props => {
     modelTooltip = 'Select LLM Model',
     settingsTooltip = 'Model Settings',
     onResetToDefaults,
+    dataTourTargetId,
   } = props;
 
   const theme = useTheme();
@@ -80,6 +81,7 @@ const LLMModelSelector = memo(props => {
         ref={anchorRef}
         aria-label="Model Selector Menu"
         sx={styles.buttonGroup}
+        {...(dataTourTargetId ? { 'data-tour': dataTourTargetId } : {})}
       >
         <Tooltip
           placement="top"
