@@ -46,7 +46,7 @@ export const useApplicationRequests = () => {
         const result = await createModerationRequest({
           projectId,
           entityId: appType,
-          issue_type: 'application_access_request',
+          issue_type: 'Application Access Request',
           description,
           status: 'pending',
           meta: {},
