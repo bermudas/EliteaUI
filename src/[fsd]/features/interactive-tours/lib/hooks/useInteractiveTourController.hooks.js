@@ -7,14 +7,20 @@ import { actions as settingsActions } from '@/slices/settings';
 import {
   AGENT_STUDIO_TOUR_ID,
   AGENT_TOUR_ID,
+  AI_CONFIG_TOUR_ID,
+  ANALYTICS_TOUR_ID,
   ARTIFACT_TOUR_ID,
   CHAT_TOUR_ID,
   FIRST_ELITEA_TOUR_ID,
   MCP_TOUR_ID,
+  NOTIFICATIONS_TOUR_ID,
+  PERSONAL_TOKENS_TOUR_ID,
   PIPELINE_TOUR_ID,
   RESOURCES_TOUR_ID,
+  SECRETS_TOUR_ID,
   SIDEBAR_TOUR_ID,
   TOOLKIT_TOUR_ID,
+  USERS_TOUR_ID,
 } from '../constants';
 import { initialState, lsCompletedKey, lsPromptKey, tourReducer } from '../helpers';
 
@@ -22,16 +28,26 @@ import { initialState, lsCompletedKey, lsPromptKey, tourReducer } from '../helpe
 const TOUR_LOADERS = {
   [AGENT_STUDIO_TOUR_ID]: () =>
     import('../constants/agentStudioTour.constants').then(m => m.agentStudioTourSteps),
+  [AI_CONFIG_TOUR_ID]: () =>
+    import('../constants/aiConfigurationTour.constants').then(m => m.aiConfigurationTourSteps),
+  [ANALYTICS_TOUR_ID]: () => import('../constants/analyticsTour.constants').then(m => m.analyticsTourSteps),
   [ARTIFACT_TOUR_ID]: () => import('../constants/artifactTour.constants').then(m => m.artifactTourSteps),
   [CHAT_TOUR_ID]: () => import('../constants/chatTour.constants').then(m => m.chatTourSteps),
   [AGENT_TOUR_ID]: () => import('../constants/agentTour.constants').then(m => m.agentTourSteps),
+  [NOTIFICATIONS_TOUR_ID]: () =>
+    import('../constants/notificationsTour.constants').then(m => m.notificationsTourSteps),
+  [PERSONAL_TOKENS_TOUR_ID]: () =>
+    import('../constants/personalTokensTour.constants').then(m => m.personalTokensTourSteps),
   [PIPELINE_TOUR_ID]: () => import('../constants/pipelineTour.constants').then(m => m.pipelineTourSteps),
+  [SECRETS_TOUR_ID]: () => import('../constants/secretsTour.constants').then(m => m.secretsTourSteps),
+  [USERS_TOUR_ID]: () => import('../constants/usersTour.constants').then(m => m.usersTourSteps),
   [FIRST_ELITEA_TOUR_ID]: () =>
     import('../constants/firstEliteaTour.constants').then(m => m.firstEliteaTourSteps),
   [MCP_TOUR_ID]: () => import('../constants/mcpTour.constants.js').then(m => m.mcpTourSteps),
   [SIDEBAR_TOUR_ID]: () => import('../constants/sidebarTour.constants').then(m => m.sidebarTourSteps),
   [RESOURCES_TOUR_ID]: () => import('../constants/resourcesTour.constants').then(m => m.resourcesTourSteps),
   [TOOLKIT_TOUR_ID]: () => import('../constants/toolkitTour.constants').then(m => m.toolkitTourSteps),
+  [RESOURCES_TOUR_ID]: () => import('../constants/resourcesTour.constants').then(m => m.resourcesTourSteps),
 };
 
 /**
