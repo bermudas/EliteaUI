@@ -1,9 +1,9 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 
 import { AIAssistantModal } from '@/[fsd]/features/pipelines/ai-assistant/ui';
+import { CodeMirrorEditorHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Input } from '@/[fsd]/shared/ui';
 import AIAssistantIcon from '@/assets/ai-assistant-icon.svg?react';
-import { detectContentType } from '@/hooks/useCodeMirrorLanguageExtensions';
 
 const AIAssistantInput = memo(props => {
   const {
@@ -27,7 +27,7 @@ const AIAssistantInput = memo(props => {
   }, []);
 
   const detectedLanguage = useMemo(() => {
-    return language || detectContentType(value);
+    return language || CodeMirrorEditorHelpers.detectContentType(value);
   }, [language, value]);
 
   return (

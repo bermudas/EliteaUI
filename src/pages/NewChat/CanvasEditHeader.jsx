@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { Box, IconButton, Typography } from '@mui/material';
 
 import Tooltip from '@/ComponentsLib/Tooltip';
+import { CodeMirrorEditorHelpers } from '@/[fsd]/shared/lib/helpers';
 import { SingleSelect } from '@/[fsd]/shared/ui/select';
 import AddColumnIcon from '@/assets/add-column-icon.svg?react';
 import AddRowIcon from '@/assets/add-row-icon.svg?react';
@@ -13,7 +14,6 @@ import CopyIcon from '@/components/Icons/CopyIcon';
 import DeleteIcon from '@/components/Icons/DeleteIcon';
 import RegenerateIcon from '@/components/Icons/RegenerateIcon';
 import ImportTableButton from '@/components/ImportTableButton';
-import { languageOptions } from '@/hooks/useCodeMirrorLanguageExtensions';
 import { useTheme } from '@emotion/react';
 
 const CanvasEditHeader = ({
@@ -202,7 +202,7 @@ const CanvasEditHeader = ({
               onValueChange={onChangeLanguage}
               value={finalLanguage}
               disabled={disabledAll || disableLanguageSelect}
-              options={languageOptions}
+              options={CodeMirrorEditorHelpers.languageOptions}
               customSelectedColor={`${theme.palette.text.primary} !important`}
               customSelectedFontSize={'0.875rem'}
               sx={{ margin: '5px 0 0 0 !important' }}

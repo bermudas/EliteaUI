@@ -7,13 +7,13 @@ import { Box, useTheme } from '@mui/system';
 import StyledTooltip from '@/ComponentsLib/Tooltip';
 import { FlowEditorContext } from '@/[fsd]/app/providers';
 import { FlowEditorHelpers } from '@/[fsd]/features/pipelines/flow-editor/lib/helpers';
+import { CodeMirrorEditorHelpers, CodeMirrorLinterHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Field } from '@/[fsd]/shared/ui';
 import { SingleSelect } from '@/[fsd]/shared/ui/select';
 import CollapseIcon from '@/assets/collapse-icon.svg?react';
 import ExpandIcon from '@/assets/expand-icon.svg?react';
 import CloseIcon from '@/components/Icons/CloseIcon';
 import CopyIcon from '@/components/Icons/CopyIcon';
-import { jsonLinter, languageOptions } from '@/hooks/useCodeMirrorLanguageExtensions';
 import useToast from '@/hooks/useToast';
 import { json } from '@codemirror/lang-json';
 
@@ -187,7 +187,7 @@ const CustomNodeInput = memo(({ id }) => {
         <Field.CodeMirrorEditor
           className="nopan nodrag nowheel"
           value={jsonString}
-          extensions={[json(), jsonLinter]}
+          extensions={[json(), CodeMirrorLinterHelpers.jsonLinter]}
           readOnly={isRunningPipeline || disabled}
           height={minHeight}
           minHeight={minHeight}
@@ -249,7 +249,7 @@ const CustomNodeInput = memo(({ id }) => {
               <Box>
                 <SingleSelect
                   value={'json'}
-                  options={languageOptions}
+                  options={CodeMirrorEditorHelpers.languageOptions}
                   customSelectedColor={`${theme.palette.text.primary} !important`}
                   customSelectedFontSize={'.875rem'}
                   sx={{ margin: '.3125rem 0 0 0 !important' }}
@@ -302,7 +302,7 @@ const CustomNodeInput = memo(({ id }) => {
           <Field.CodeMirrorEditor
             className="nopan nodrag nowheel"
             value={jsonString}
-            extensions={[json(), jsonLinter]}
+            extensions={[json(), CodeMirrorLinterHelpers.jsonLinter]}
             readOnly={isRunningPipeline || disabled}
             notifyChange={handleChange}
             onBlur={handleBlur}

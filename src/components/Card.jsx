@@ -84,8 +84,8 @@ const Card = memo(props => {
   const isSupportAssistant = useMemo(
     () =>
       isApplicationCard(type) &&
-      supportAssistantConfig?.values?.support_agent_id === id &&
-      supportAssistantConfig?.values?.support_project_id === projectId,
+      supportAssistantConfig?.agent_id === id &&
+      supportAssistantConfig?.support_project_id === projectId,
     [supportAssistantConfig, id, projectId, type],
   );
 

@@ -1,8 +1,8 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 
+import { CodeMirrorEditorHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Input } from '@/[fsd]/shared/ui';
 import StyledInputModal from '@/components/StyledInputModal';
-import { detectContentType } from '@/hooks/useCodeMirrorLanguageExtensions';
 
 // Styled components exported for backward compatibility
 // These are used by other components like ModerationActions
@@ -83,7 +83,7 @@ const StyledInputEnhancer = memo(props => {
   );
 
   const detectedLanguage = useMemo(() => {
-    return language || detectContentType(value);
+    return language || CodeMirrorEditorHelpers.detectContentType(value);
   }, [language, value]);
 
   return (

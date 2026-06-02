@@ -1,17 +1,17 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 
 import { Box, IconButton, Typography } from '@mui/material';
 
 import { TokensConstants } from '@/[fsd]/features/settings/lib/constants';
+import { CodeMirrorLinterHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Field } from '@/[fsd]/shared/ui';
 import { SingleSelect } from '@/[fsd]/shared/ui/select';
 import { VITE_SERVER_URL } from '@/common/constants';
 import CloseIcon from '@/components/Icons/CloseIcon';
 import CopyIcon from '@/components/Icons/CopyIcon';
 import DownloadIcon from '@/components/Icons/DownloadIcon';
-import { getExtensionsByLang } from '@/hooks/useCodeMirrorLanguageExtensions';
 import useToast from '@/hooks/useToast';
 
 const options = Object.values(TokensConstants.SETTINGS_PREVIEW_TYPES).map(type => ({
@@ -26,6 +26,8 @@ const SettingsPreview = memo(props => {
   const { toastSuccess, toastError } = useToast();
   const user = useSelector(state => state.user);
   const [selectedIDE, setSelectedIDE] = useState(TokensConstants.SETTINGS_PREVIEW_TYPES.VSCODE);
+
+  const [extensions, setExtensions] = useState([]);
 
   const handleIDEChange = useCallback(newIDE => {
     setSelectedIDE(newIDE);
@@ -127,10 +129,10 @@ const SettingsPreview = memo(props => {
     return selectedIDE === TokensConstants.SETTINGS_PREVIEW_TYPES.VSCODE ? 'json' : 'xml';
   }, [selectedIDE]);
 
-  // Get extensions with fallback
-  const extensions = useMemo(() => {
-    const langExtensions = getExtensionsByLang(editorLanguage);
-    return langExtensions?.extensionWithoutLinter || [];
+  useEffect(() => {
+    CodeMirrorLinterHelpers.getExtensionsByLang(editorLanguage).then(({ extensionWithoutLinter }) =>
+      setExtensions(extensionWithoutLinter || []),
+    );
   }, [editorLanguage]);
 
   const canvasTitle = useMemo(() => {

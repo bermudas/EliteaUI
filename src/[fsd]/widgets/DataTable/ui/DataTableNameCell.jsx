@@ -3,8 +3,8 @@ import { memo, useCallback, useMemo } from 'react';
 import { Box, IconButton, Typography } from '@mui/material';
 
 import StyledTooltip from '@/ComponentsLib/Tooltip';
-import { useEliteaAssistantRef, useGetSupportAssistantConfigQuery } from '@/[fsd]/widgets/SupportAssistant';
 import { PinButton } from '@/[fsd]/widgets/PinToggler/ui';
+import { useEliteaAssistantRef, useGetSupportAssistantConfigQuery } from '@/[fsd]/widgets/SupportAssistant';
 import EliteaAssistantIcon from '@/assets/icons/elitea-assistant-icon.svg?react';
 import PublishIcon from '@/assets/publish-version.svg?react';
 import { isApplicationCard } from '@/common/checkCardType';
@@ -43,8 +43,8 @@ const DataTableNameCell = memo(props => {
   const isSupportAssistant = useMemo(
     () =>
       isApplicationCard(cardType) &&
-      supportAssistantConfig?.values?.support_agent_id === id &&
-      supportAssistantConfig?.values?.support_project_id === projectId,
+      supportAssistantConfig?.agent_id === id &&
+      supportAssistantConfig?.support_project_id === projectId,
     [supportAssistantConfig, id, projectId, cardType],
   );
 

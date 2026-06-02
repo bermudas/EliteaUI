@@ -3,11 +3,12 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from '@mui/material';
 
 import StyledTooltip from '@/ComponentsLib/Tooltip';
+import { CodeMirrorEditorHelpers } from '@/[fsd]/shared/lib/helpers';
+import { useLanguageLinter } from '@/[fsd]/shared/lib/hooks';
 import { SingleSelect } from '@/[fsd]/shared/ui/select';
 import { handleCopy } from '@/common/utils';
 import CloseIcon from '@/components/Icons/CloseIcon';
 import CopyIcon from '@/components/Icons/CopyIcon';
-import { languageOptions, useLanguageLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
 import useToast from '@/hooks/useToast';
 import { useTheme } from '@emotion/react';
 
@@ -124,7 +125,7 @@ const StyledInputModalBase = memo(props => {
               <SingleSelect
                 onValueChange={onChangeLanguage}
                 value={language === 'cpp' ? 'c++' : language}
-                options={languageOptions}
+                options={CodeMirrorEditorHelpers.languageOptions}
                 customSelectedColor={`${theme.palette.text.primary} !important`}
                 customSelectedFontSize="0.875rem"
                 sx={styles.languageSelect}

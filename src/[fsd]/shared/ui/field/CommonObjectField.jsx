@@ -4,8 +4,6 @@ import { Box, Typography } from '@mui/material';
 
 import { Field } from '@/[fsd]/shared/ui';
 import InfoTooltip from '@/[fsd]/shared/ui/tooltip/InfoTooltip';
-import { jsonLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
-import { json } from '@codemirror/lang-json';
 
 const CommonObjectField = memo(props => {
   const { fieldKey, fieldValue, fieldProperties, onChangeInputVariables, toolInputVariables } = props;
@@ -48,13 +46,17 @@ const CommonObjectField = memo(props => {
     >
       <Box sx={styles.header}>
         <Typography variant="bodyMedium">{`${label}${isRequired ? ' *' : ''}`}</Typography>
-        {description && <InfoTooltip infoTooltip={description} sx={styles.infoIconWrapper} />}
+        {description && (
+          <InfoTooltip
+            infoTooltip={description}
+            sx={styles.infoIconWrapper}
+          />
+        )}
       </Box>
       <Box sx={{ marginTop: '0.75rem' }}>
         <Field.ResizableCodeMirrorEditor
           expandAction
           value={JSON.stringify(fieldValue || {}, null, 2)}
-          extensions={[json(), jsonLinter]}
           minHeight={100}
           onChange={value => handleJSONObjectChange(fieldKey, value)}
           readOnly={disabled}

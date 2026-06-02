@@ -1,16 +1,12 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Split from 'react-split';
 
 import { Box, Dialog, DialogContent, FormControl, IconButton, Typography, useTheme } from '@mui/material';
 
+import { CodeMirrorEditorHelpers, CodeMirrorLinterHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Field } from '@/[fsd]/shared/ui';
 import { SingleSelect } from '@/[fsd]/shared/ui/select';
-import {
-  detectContentType,
-  getExtensionsByLang,
-  languageOptions,
-} from '@/hooks/useCodeMirrorLanguageExtensions';
 import useToast from '@/hooks/useToast';
 import { EditorView } from '@codemirror/view';
 
@@ -26,15 +22,31 @@ const ToolModal = ({ open, onClose, toolData, title = '', input = '', output = '
   const [outputFormat, setOutputFormat] = useState('auto');
 
   // Available format options from the shared language extensions
-  const formatOptions = useMemo(() => [{ value: 'auto', label: 'Auto-detect' }, ...languageOptions], []);
+  const formatOptions = useMemo(
+    () => [{ value: 'auto', label: 'Auto-detect' }, ...CodeMirrorEditorHelpers.languageOptions],
+    [],
+  );
 
-  const getLanguageExtension = useCallback((format, content) => {
-    const actualFormat = format === 'auto' ? detectContentType(content) : format;
+  const [inputExtensions, setInputExtensions] = useState([EditorView.lineWrapping]);
+  const [outputExtensions, setOutputExtensions] = useState([EditorView.lineWrapping]);
 
-    // Use the shared language extension system and always add word wrapping
-    const { extensionWithoutLinter } = getExtensionsByLang(actualFormat);
-    return [...extensionWithoutLinter, EditorView.lineWrapping];
-  }, []);
+  useEffect(() => {
+    const actualFormat =
+      inputFormat === 'auto' ? CodeMirrorEditorHelpers.detectContentType(input) : inputFormat;
+
+    CodeMirrorLinterHelpers.getExtensionsByLang(actualFormat).then(({ extensionWithoutLinter }) =>
+      setInputExtensions([...extensionWithoutLinter, EditorView.lineWrapping]),
+    );
+  }, [inputFormat, input]);
+
+  useEffect(() => {
+    const actualFormat =
+      outputFormat === 'auto' ? CodeMirrorEditorHelpers.detectContentType(output) : outputFormat;
+
+    CodeMirrorLinterHelpers.getExtensionsByLang(actualFormat).then(({ extensionWithoutLinter }) =>
+      setOutputExtensions([...extensionWithoutLinter, EditorView.lineWrapping]),
+    );
+  }, [outputFormat, output]);
 
   const handleCopyToClipboard = useCallback(
     text => {
@@ -267,7 +279,7 @@ const ToolModal = ({ open, onClose, toolData, title = '', input = '', output = '
               <Field.CodeMirrorEditor
                 value={input}
                 readOnly={true}
-                extensions={getLanguageExtension(inputFormat, input)}
+                extensions={inputExtensions}
                 autoHeight={true}
                 maxHeight="calc(80vh - 125px)"
                 variant="caption"
@@ -341,7 +353,7 @@ const ToolModal = ({ open, onClose, toolData, title = '', input = '', output = '
               <Field.CodeMirrorEditor
                 value={output}
                 readOnly={true}
-                extensions={getLanguageExtension(outputFormat, output)}
+                extensions={outputExtensions}
                 autoHeight={true}
                 maxHeight="calc(80vh - 125px)"
                 variant="caption"

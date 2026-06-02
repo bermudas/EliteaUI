@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import YAML from 'js-yaml';
 
@@ -8,6 +8,7 @@ import { OpenApiHelpers, ToolBaseHelpers } from '@/[fsd]/features/toolkits/lib/h
 import { ToolkitForm } from '@/[fsd]/features/toolkits/ui';
 import { ArrayFieldInput } from '@/[fsd]/features/toolkits/ui/form/ToolBase';
 import { AccordionConstants } from '@/[fsd]/shared/lib/constants';
+import { CodeMirrorLinterHelpers } from '@/[fsd]/shared/lib/helpers';
 import { useFieldFocus } from '@/[fsd]/shared/lib/hooks';
 import { Checkbox, Field, Input } from '@/[fsd]/shared/ui';
 import BasicAccordion from '@/[fsd]/shared/ui/accordion/BasicAccordion';
@@ -22,8 +23,6 @@ import ImageGenerationModelSelect from '@/components/ImageGenerationModelSelect'
 import LlmModelSelect from '@/components/LlmModelSelect';
 import SecretManagementInput from '@/components/SecretManagementInput.jsx';
 import ToolkitSelect from '@/components/ToolkitSelect';
-import { getExtensionsByLang, jsonLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
-import { json } from '@codemirror/lang-json';
 
 const ToolBaseProperty = memo(props => {
   const {
@@ -67,6 +66,16 @@ const ToolBaseProperty = memo(props => {
     visible_when: visibleWhen,
     placeholder: schemaPlaceholder,
   } = v || {};
+
+  const [codeExtensions, setCodeExtensions] = useState([]);
+
+  useEffect(() => {
+    if (codeLanguage) {
+      CodeMirrorLinterHelpers.getExtensionsByLang(codeLanguage).then(({ extensionWithLinter }) =>
+        setCodeExtensions(extensionWithLinter || []),
+      );
+    }
+  }, [codeLanguage]);
 
   // Extract enum items - check direct enum first, then look in anyOf
   const enumItems = useMemo(() => {
@@ -328,8 +337,6 @@ const ToolBaseProperty = memo(props => {
         />
       );
     } else if (type === 'object' || anyOf?.find(item => item.type === 'object')) {
-      const codeExtensions = [json(), jsonLinter];
-
       if (noAccordionWrapper) {
         return (
           <Box
@@ -345,7 +352,6 @@ const ToolBaseProperty = memo(props => {
             <Field.ResizableCodeMirrorEditor
               expandAction
               value={JSON.stringify(settings[k] || {}, null, 2)}
-              extensions={codeExtensions}
               minHeight={100}
               fieldName={title}
               onChange={handleObjectFieldChange}
@@ -371,7 +377,6 @@ const ToolBaseProperty = memo(props => {
                   <Field.ResizableCodeMirrorEditor
                     expandAction
                     value={JSON.stringify(settings[k] || {}, null, 2)}
-                    extensions={codeExtensions}
                     minHeight={100}
                     fieldName={title}
                     onChange={handleObjectFieldChange}
@@ -446,7 +451,6 @@ const ToolBaseProperty = memo(props => {
       (type === 'string' || anyOf?.find(item => item.type === 'string')) &&
       codeLanguage !== undefined
     ) {
-      const codeExtensions = getExtensionsByLang(codeLanguage)?.extensionWithLinter || [];
       return (
         <Box
           key={k}

@@ -4,8 +4,6 @@ import { Box, Typography } from '@mui/material';
 
 import { Field } from '@/[fsd]/shared/ui';
 import InfoTooltip from '@/[fsd]/shared/ui/tooltip/InfoTooltip';
-import { jsonLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
-import { json } from '@codemirror/lang-json';
 
 const AnyOfPatternField = memo(props => {
   const { fieldKey, fieldValue, fieldProperties, onChangeInputVariables, toolInputVariables } = props;
@@ -54,13 +52,17 @@ const AnyOfPatternField = memo(props => {
     >
       <Box sx={styles.header}>
         <Typography variant="bodyMedium">{`${label}${isRequired ? ' *' : ''}`}</Typography>
-        {description && <InfoTooltip infoTooltip={description} sx={styles.infoIconWrapper} />}
+        {description && (
+          <InfoTooltip
+            infoTooltip={description}
+            sx={styles.infoIconWrapper}
+          />
+        )}
       </Box>
       <Box sx={{ marginTop: '0.75rem' }}>
         <Field.ResizableCodeMirrorEditor
           expandAction
           value={JSON.stringify(fieldValue || [], null, 2)}
-          extensions={[json(), jsonLinter]}
           minHeight={100}
           onChange={value => onArrayOfPatternFieldChange(fieldKey, value)}
           readOnly={disabled}

@@ -5,11 +5,21 @@ import { Box } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 
 import Tooltip from '@/ComponentsLib/Tooltip';
+import { CodeMirrorLinterHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Field } from '@/[fsd]/shared/ui';
 import StyledInputModal from '@/components/StyledInputModal';
+import { json } from '@codemirror/lang-json';
 
 const ResizableCodeMirrorEditor = memo(props => {
-  const { fieldName, value, onChange, extensions, minHeight = 120, expandAction = false, ...rest } = props;
+  const {
+    fieldName,
+    value,
+    onChange,
+    extensions = [json(), CodeMirrorLinterHelpers.jsonLinter],
+    minHeight = 120,
+    expandAction = false,
+    ...rest
+  } = props;
   const [currentValue, setCurrentValue] = useState(value);
   const styles = resizableCodeMirrorEditorStyles({ minHeight });
   const resizeBoxRef = useRef();

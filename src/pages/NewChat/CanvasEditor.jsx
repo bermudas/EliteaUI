@@ -8,6 +8,7 @@ import { Box, useTheme } from '@mui/system';
 
 import { useTrackEvent } from '@/GA';
 import { GA_EVENT_NAMES, GA_EVENT_PARAMS } from '@/[fsd]/shared/lib/constants/analytic.constants';
+import { useLanguageLinter } from '@/[fsd]/shared/lib/hooks';
 import { Field } from '@/[fsd]/shared/ui';
 import { useEditCanvasMutation } from '@/api';
 import { useListModelsQuery } from '@/api/configurations.js';
@@ -28,7 +29,6 @@ import {
   useJoinCanvasSocket,
   useLeaveCanvasRoomSocket,
 } from '@/hooks/chat/useCanvasSocket';
-import { useLanguageLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
 import useIsSmallWindow from '@/hooks/useIsSmallWindow';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
 import { SERVICE_PROMPT_KEYS, useServicePromptByKey } from '@/hooks/useServicePromptByKey';

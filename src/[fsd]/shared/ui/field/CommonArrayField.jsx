@@ -5,8 +5,6 @@ import { Box } from '@mui/system';
 
 import { Field, Select } from '@/[fsd]/shared/ui';
 import InfoTooltip from '@/[fsd]/shared/ui/tooltip/InfoTooltip';
-import { jsonLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
-import { json } from '@codemirror/lang-json';
 
 const CommonArrayField = memo(props => {
   const {
@@ -111,7 +109,6 @@ const CommonArrayField = memo(props => {
       <Field.ResizableCodeMirrorEditor
         expandAction
         value={JSON.stringify(fieldValue || [], null, 2)}
-        extensions={[json(), jsonLinter]}
         minHeight={100}
         onChange={value => handleJSONObjectChange(fieldKey, value)}
         readOnly={disabled}
