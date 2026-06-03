@@ -7,7 +7,7 @@ import { Box, IconButton, Typography, useTheme } from '@mui/material';
 import Tooltip from '@/ComponentsLib/Tooltip';
 import { useMcpTokenChange } from '@/[fsd]/features/mcp/lib/hooks';
 import { McpLogInLink } from '@/[fsd]/features/mcp/ui';
-import { useGetToolkitNameFromSchema } from '@/[fsd]/features/pipelines/flow-editor/lib/hooks';
+import { useGetToolkitNameFromSchema } from '@/[fsd]/features/pipelines/flow-editor/lib/hooks/useGetToolkitNameFromSchema.hooks';
 import { useResolvedSharepointConfig } from '@/[fsd]/features/sharepoint/lib/hooks/useResolvedSharepointConfig.hooks';
 import { SharepointLogInLink } from '@/[fsd]/features/sharepoint/ui';
 import { useEliteaAssistantRef } from '@/[fsd]/widgets/support-assistant';

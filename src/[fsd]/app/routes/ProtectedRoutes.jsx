@@ -7,7 +7,6 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import IndexRoute from '@/[fsd]/app/routes/IndexRoute';
 import IntegrationGuard from '@/[fsd]/app/routes/IntegrationGuard';
 import ProtectedRoute from '@/[fsd]/app/routes/ProtectedRoute';
-import { AnalyticsContainer } from '@/[fsd]/features/analytics/ui';
 import { ChunkHelpers } from '@/[fsd]/shared/lib/helpers';
 import { useLazyPermissionListQuery, useLazyPublicPermissionListQuery } from '@/api/auth';
 import { useLazyAuthorDetailsQuery } from '@/api/social.js';
@@ -29,6 +28,7 @@ import Page404 from '@/pages/Page404.jsx';
 import RouteDefinitions from '@/routes';
 import { actions as chatActions } from '@/slices/chat';
 
+const AnalyticsContainer = ChunkHelpers.lazyWithRetry(() => import('@/[fsd]/features/analytics/ui/AnalyticsContainer'));
 const AppDetail = ChunkHelpers.lazyWithRetry(() => import('@/[fsd]/pages/apps/AppDetail'));
 const Apps = ChunkHelpers.lazyWithRetry(() => import('@/[fsd]/pages/apps/Apps'));
 const McpAuthPage = ChunkHelpers.lazyWithRetry(() => import('@/[fsd]/pages/mcp/index.jsx'));
