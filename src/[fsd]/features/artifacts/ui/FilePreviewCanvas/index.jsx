@@ -8,11 +8,11 @@ import { ArtifactParserHelpers } from '@/[fsd]/features/artifacts/lib/helpers';
 import { useArtifactContentFetch } from '@/[fsd]/features/artifacts/lib/hooks';
 import { PreviewContent, PreviewHeader, PreviewUnavailable } from '@/[fsd]/features/artifacts/ui';
 import { GA_EVENT_NAMES, GA_EVENT_PARAMS } from '@/[fsd]/shared/lib/constants/analytic.constants';
+import { CodeMirrorLinterHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Modal } from '@/[fsd]/shared/ui';
 import { useCreateArtifactMutation, useDeleteArtifactMutation } from '@/api/artifacts';
 import { downloadFileFromArtifact } from '@/common/utils';
 import AlertDialog from '@/components/AlertDialog';
-import { getExtensionsByLang } from '@/hooks/useCodeMirrorLanguageExtensions';
 import { useIsFrom } from '@/hooks/useIsFromSpecificPageHooks';
 import useIsSmallWindow from '@/hooks/useIsSmallWindow';
 import useToast from '@/hooks/useToast';
@@ -79,6 +79,8 @@ const FilePreviewCanvas = memo(props => {
   const [isRenderLoading, setIsRenderLoading] = useState(false);
   const [parsedData, setParsedData] = useState(null);
   const [docxResetKey, setDocxResetKey] = useState(0);
+
+  const [codeMirrorExtension, setCodeMirrorExtension] = useState([]);
 
   const hasChanges = useMemo(
     () => editedContent && editedContent !== fileContent,
@@ -188,11 +190,16 @@ const FilePreviewCanvas = memo(props => {
     [isRenderLoading, isDataFile, renderMode, fileContent, parsedData, loadError],
   );
 
-  const codeMirrorExtension = useMemo(() => {
-    if (!fileContent) return [];
+  useEffect(() => {
+    if (!fileContent) {
+      setCodeMirrorExtension([]);
+      return;
+    }
 
-    const extensions = getExtensionsByLang(currentLanguage);
-    return extensions.extensionWithLinter || extensions.extensionWithoutLinter || [];
+    CodeMirrorLinterHelpers.getExtensionsByLang(currentLanguage).then(
+      ({ extensionWithLinter, extensionWithoutLinter }) =>
+        setCodeMirrorExtension(extensionWithLinter || extensionWithoutLinter || []),
+    );
   }, [fileContent, currentLanguage]);
 
   const fileTooLarge = useMemo(() => (!file ? false : !isFileSizePreviewableFlexible(file)), [file]);

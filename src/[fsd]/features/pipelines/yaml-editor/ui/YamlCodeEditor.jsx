@@ -4,8 +4,8 @@ import { useSelector } from 'react-redux';
 
 import { Box, styled } from '@mui/material';
 
+import { useLanguageLinter } from '@/[fsd]/shared/lib/hooks';
 import { Field } from '@/[fsd]/shared/ui';
-import { useLanguageLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
 
 const StyledCodeMirrorEditor = styled(Field.CodeMirrorEditor)({
   '& .error_yaml_code': {

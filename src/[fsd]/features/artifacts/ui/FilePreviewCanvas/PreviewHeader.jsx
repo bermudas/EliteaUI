@@ -5,6 +5,7 @@ import { Box, Button, IconButton, ToggleButton, ToggleButtonGroup, Tooltip, Typo
 import { useTrackEvent } from '@/GA';
 import { FilePreviewCanvasConstants } from '@/[fsd]/features/artifacts/lib/constants';
 import { GA_EVENT_NAMES, GA_EVENT_PARAMS } from '@/[fsd]/shared/lib/constants/analytic.constants';
+import { CodeMirrorEditorHelpers } from '@/[fsd]/shared/lib/helpers';
 import { DiscardButton } from '@/[fsd]/shared/ui/button';
 import { SingleSelect } from '@/[fsd]/shared/ui/select';
 import DotMenu from '@/components/DotMenu';
@@ -12,7 +13,6 @@ import CloseIcon from '@/components/Icons/CloseIcon';
 import CopyIcon from '@/components/Icons/CopyIcon';
 import DeleteIcon from '@/components/Icons/DeleteIcon';
 import DownloadIcon from '@/components/Icons/DownloadIcon';
-import { languageOptions } from '@/hooks/useCodeMirrorLanguageExtensions';
 import useToast from '@/hooks/useToast';
 
 const { AvailableLanguagesEnum } = FilePreviewCanvasConstants;
@@ -69,7 +69,10 @@ const PreviewHeader = memo(props => {
 
   const { toastInfo, toastError } = useToast();
 
-  const availableLanguages = useMemo(() => [plainTextLanguage, ...languageOptions], []);
+  const availableLanguages = useMemo(
+    () => [plainTextLanguage, ...CodeMirrorEditorHelpers.languageOptions],
+    [],
+  );
 
   const shouldDetectLanguage = useMemo(
     () => fileContent && !isImageFileType && !isDocxFile,

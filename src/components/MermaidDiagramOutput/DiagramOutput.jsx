@@ -1,13 +1,13 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import domtoimage from 'dom-to-image';
-import mermaid from 'mermaid';
 import svgPanZoom from 'svg-pan-zoom';
 
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
 
 import Tooltip from '@/ComponentsLib/Tooltip';
+import { MermaidHelpers } from '@/[fsd]/shared/lib/helpers';
 import InfoTooltip from '@/[fsd]/shared/ui/tooltip/InfoTooltip';
 import FullscreenIcon from '@/assets/full-screen-icon.svg?react';
 import MinusIcon from '@/assets/minus-icon.svg?react';
@@ -161,7 +161,8 @@ const MermaidDiagramOutput = memo(props => {
     canvas.style.justifyContent = 'center';
     canvas.style.alignItems = 'center';
     document.body.appendChild(canvas);
-    const { svg } = await mermaid.render('save_diagram_graph_id', code, canvas);
+    const m = await MermaidHelpers.getMermaid();
+    const { svg } = await m.render('save_diagram_graph_id', code, canvas);
     canvas.innerHTML = svg;
     return { canvas, imageId: '#saveImageCanvas' };
   }, [code, theme.palette.background.tabPanel]);
@@ -253,12 +254,14 @@ const MermaidDiagramOutput = memo(props => {
   }, []);
 
   useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: true,
-      securityLevel: 'loose',
-      theme: theme.palette.mode === 'dark' ? 'dark' : 'light',
+    MermaidHelpers.getMermaid().then(m => {
+      m.initialize({
+        startOnLoad: true,
+        securityLevel: 'loose',
+        theme: theme.palette.mode === 'dark' ? 'dark' : 'light',
+      });
+      m.contentLoaded();
     });
-    mermaid.contentLoaded();
   }, [theme.palette.mode]);
 
   useEffect(() => {
@@ -269,7 +272,8 @@ const MermaidDiagramOutput = memo(props => {
         diagram.style.height = '100%';
         diagram.style.width = '100%';
         try {
-          const { svg } = await mermaid.render(graphId, code, diagram);
+          const m = await MermaidHelpers.getMermaid();
+          const { svg } = await m.render(graphId, code, diagram);
           diagram.innerHTML = svg;
         } catch (err) {
           // console.log('mermaid render error ======>', err)
@@ -351,7 +355,8 @@ const MermaidDiagramOutput = memo(props => {
 
   useEffect(() => {
     const parseCode = async () => {
-      if (await mermaid.parse(code, { suppressErrors: true })) {
+      const m = await MermaidHelpers.getMermaid();
+      if (await m.parse(code, { suppressErrors: true })) {
         setIsValidCode(true);
       } else {
         setIsValidCode(false);

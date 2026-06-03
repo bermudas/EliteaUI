@@ -1,12 +1,20 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { Box } from '@mui/material';
 
+import { CodeMirrorLinterHelpers } from '@/[fsd]/shared/lib/helpers';
 import { Field } from '@/[fsd]/shared/ui';
-import { getExtensionsByLang } from '@/hooks/useCodeMirrorLanguageExtensions';
 
 const CodePreviewContent = memo(({ codeExample, editorLanguage, modelName }) => {
   const styles = getStyles();
+
+  const [extensions, setExtensions] = useState([]);
+
+  useEffect(() => {
+    CodeMirrorLinterHelpers.getExtensionsByLang(editorLanguage).then(({ extensionWithoutLinter }) =>
+      setExtensions(extensionWithoutLinter || []),
+    );
+  }, [editorLanguage]);
 
   return (
     <Box sx={styles.codeEditorContainer}>
@@ -15,7 +23,7 @@ const CodePreviewContent = memo(({ codeExample, editorLanguage, modelName }) => 
         value={codeExample}
         language={editorLanguage}
         readOnly={true}
-        extensions={getExtensionsByLang(editorLanguage)?.extensionWithoutLinter || []}
+        extensions={extensions}
         autoHeight={true}
         maxHeight="none"
         variant="caption"

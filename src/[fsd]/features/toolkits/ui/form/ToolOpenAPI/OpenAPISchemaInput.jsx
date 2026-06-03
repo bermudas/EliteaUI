@@ -7,10 +7,10 @@ import { Box, FormControl, FormHelperText, IconButton, Typography } from '@mui/m
 import Tooltip from '@/ComponentsLib/Tooltip';
 import { OpenApiHelpers } from '@/[fsd]/features/toolkits/lib/helpers';
 import { AccordionConstants } from '@/[fsd]/shared/lib/constants';
+import { useLanguageLinter } from '@/[fsd]/shared/lib/hooks';
 import { Field, Modal } from '@/[fsd]/shared/ui';
 import BasicAccordion from '@/[fsd]/shared/ui/accordion/BasicAccordion';
 import FullscreenIcon from '@/assets/full-screen-icon.svg?react';
-import { useLanguageLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
 import useToast from '@/hooks/useToast';
 
 const OpenAPISchemaInput = memo(props => {

@@ -3,8 +3,8 @@ import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef, 
 import { Box } from '@mui/material';
 
 import { AIAssistantCodeMirrorInput } from '@/[fsd]/features/pipelines/ai-assistant/ui';
+import { useLanguageLinter } from '@/[fsd]/shared/lib/hooks';
 import { Field, Modal, Text } from '@/[fsd]/shared/ui';
-import { useLanguageLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
 
 const StyledInputModal = forwardRef((props, ref) => {
   const {

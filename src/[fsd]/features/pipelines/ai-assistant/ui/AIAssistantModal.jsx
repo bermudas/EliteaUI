@@ -11,11 +11,12 @@ import {
   formatAvailableNodesForPrompt,
   formatStateVariablesForPrompt,
 } from '@/[fsd]/features/pipelines/flow-editor/lib/helpers/state.helpers';
+import { CodeMirrorEditorHelpers } from '@/[fsd]/shared/lib/helpers';
+import { useLanguageLinter } from '@/[fsd]/shared/lib/hooks';
 import { Modal, Text } from '@/[fsd]/shared/ui';
 import { capitalizeFirstChar } from '@/common/utils';
 import CloseIcon from '@/components/Icons/CloseIcon';
 import CopyIcon from '@/components/Icons/CopyIcon';
-import { detectContentType, useLanguageLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
 import useToast from '@/hooks/useToast';
 
 const AIAssistantModal = memo(props => {
@@ -115,7 +116,7 @@ const AIAssistantModal = memo(props => {
    */
   const updateLanguageIfChanged = useCallback(
     content => {
-      const detectedLanguage = detectContentType(content);
+      const detectedLanguage = CodeMirrorEditorHelpers.detectContentType(content);
       if (detectedLanguage && detectedLanguage !== language) {
         onChangeLanguage(detectedLanguage);
       }

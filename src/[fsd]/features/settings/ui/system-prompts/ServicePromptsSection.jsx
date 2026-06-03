@@ -5,6 +5,7 @@ import { Box, Button, IconButton, MenuItem, TextField, Typography } from '@mui/m
 
 import Tooltip from '@/ComponentsLib/Tooltip';
 import { DrawerPageHeader } from '@/[fsd]/features/settings/ui/drawer-page';
+import { useLanguageLinter } from '@/[fsd]/shared/lib/hooks';
 import { Field, Modal } from '@/[fsd]/shared/ui';
 import {
   useCreateConfigurationMutation,
@@ -15,7 +16,6 @@ import {
 import EditIcon from '@/assets/edit.svg?react';
 import { PERMISSIONS, PUBLIC_PROJECT_ID } from '@/common/constants';
 import useCheckPermission from '@/hooks/useCheckPermission';
-import { useLanguageLinter } from '@/hooks/useCodeMirrorLanguageExtensions';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
 import useToast from '@/hooks/useToast';
 
