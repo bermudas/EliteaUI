@@ -246,7 +246,7 @@ const UserMessage = React.forwardRef((props, ref) => {
               variant="elitea"
               color="primary"
               sx={styles.submitButton}
-              disabled={value === content}
+              disabled={value === content || !value.trim()}
               onClick={onClickSubmit}
             >
               Save and apply
