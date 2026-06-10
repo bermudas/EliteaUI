@@ -5,11 +5,9 @@ import { useSearchParams } from 'react-router-dom';
 import { Box, IconButton, Typography, useTheme } from '@mui/material';
 
 import Tooltip from '@/ComponentsLib/Tooltip';
-import { useMcpTokenChange } from '@/[fsd]/features/mcp/lib/hooks';
-import { McpLogInLink } from '@/[fsd]/features/mcp/ui';
-import { useGetToolkitNameFromSchema } from '@/[fsd]/features/pipelines/flow-editor/lib/hooks/useGetToolkitNameFromSchema.hooks';
-import { useResolvedSharepointConfig } from '@/[fsd]/features/sharepoint/lib/hooks/useResolvedSharepointConfig.hooks';
-import { SharepointLogInLink } from '@/[fsd]/features/sharepoint/ui';
+import { useParticipantDetailsContext } from '@/[fsd]/features/chat/participants/lib/context/ParticipantDetailsContext';
+import { canParticipantBeActiveInChat } from '@/[fsd]/features/chat/participants/lib/helpers';
+import { useParticipantEntityIcon } from '@/[fsd]/features/chat/participants/lib/hooks';
 import { useEliteaAssistantRef } from '@/[fsd]/widgets/support-assistant';
 import AttachIcon from '@/assets/attach-icon.svg?react';
 import OfflineIcon from '@/assets/offline-icon.svg?react';
@@ -17,17 +15,11 @@ import OnlineIcon from '@/assets/online-icon.svg?react';
 import { ChatParticipantType, PUBLIC_PROJECT_ID, SearchParams } from '@/common/constants';
 import EntityIcon from '@/components/EntityIcon';
 import AttentionIcon from '@/components/Icons/AttentionIcon';
-import ParticipantActions from '@/components/ParticipantActions';
-import useValidateApplicationVersion, {
-  useToolsValidationInfo,
-} from '@/hooks/application/useValidateApplicationVersion';
-import useValidateToolkit, { useToolkitValidationInfo } from '@/hooks/application/useValidateToolkit';
-import { canParticipantBeActiveInChat, isParticipantOKForChat } from '@/hooks/chat/useAddNewParticipants';
-import useFetchParticipantDetails from '@/hooks/chat/useFetchParticipantDetails';
-import useMCPParticipantStatusMonitor from '@/hooks/chat/useMCPParticipantStatusMonitor';
-import useParticipantEntityIcon from '@/hooks/chat/useParticipantEntityIcon';
 import useNavBlocker from '@/hooks/useNavBlocker';
 import { StyledTipsContainer } from '@/pages/Common/Components/InputVersionDialog';
+
+import ParticipantActions from '../ParticipantActions/ParticipantActions';
+import ParticipantWarning from './ParticipantWarning';
 
 const ParticipantItem = memo(props => {
   const {
@@ -38,38 +30,60 @@ const ParticipantItem = memo(props => {
     onClickItem,
     onDelete,
     onEdit,
-    // When true, suppresses the outer Tooltip to avoid clutter (e.g., inside dropdowns)
     disableTooltip = false,
     editingToolkit,
     isAttachement = false,
   } = props;
 
+  const theme = useTheme();
+
   const assistantRef = useEliteaAssistantRef();
+  const nameTextRef = useRef();
+
+  const [searchParams] = useSearchParams();
+
+  const { isEditingAgent, isEditingPipeline, isEditingToolkit } = useNavBlocker();
+  const entityIcon = useParticipantEntityIcon(participant);
+
+  const { getDetails, getParticipantStatus } = useParticipantDetailsContext();
 
   const { entity_meta, entity_name: type, meta = {} } = participant;
-  const { name: participantName } = meta || {};
-  const nameTextRef = useRef();
+
+  const originalDetails = getDetails(type, entity_meta?.id, entity_meta?.project_id);
+  const status = getParticipantStatus(type, entity_meta?.id, entity_meta?.project_id);
+
+  const {
+    shouldDisableThisItem,
+    hasMisconfigurationErrors,
+    someToolsAreUnavailable,
+    isPublishedAgentGone,
+    isVersionUnavailable,
+    mcpIsDisconnected,
+    remoteMcpLoggedOut,
+    hasRemoteMcpLoggedIn,
+    spOAuthLoggedOut,
+    spOAuthLoggedIn,
+    spConfig,
+  } = status;
+
+  const { user_name: participantName } = meta || {};
+
   const [nameIsOverflow, setNameIsOverflow] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const theme = useTheme();
-  const { getSelectedTools } = useGetToolkitNameFromSchema();
+
+  const [versionName, setVersionName] = useState('');
+
+  const editedParticipantId = searchParams.get(SearchParams.EditedParticipantId);
+  const agentType = participant.entity_settings?.agent_type;
 
   // Get Redux state and URL params for checking if this participant is being edited
-  const { isEditingAgent, isEditingPipeline, isEditingToolkit } = useNavBlocker();
-  const [searchParams] = useSearchParams();
-  const editedParticipantId = searchParams.get(SearchParams.EditedParticipantId);
-
-  // Check if this participant is currently being edited
-  const agentType = participant.entity_settings?.agent_type;
   const isBeingEdited = useMemo(() => {
-    // Handle toolkit editing
     if (
       type === ChatParticipantType.Toolkits &&
       isEditingToolkit &&
       editingToolkit?.entity_meta?.id === entity_meta?.id
-    ) {
+    )
       return true;
-    }
 
     if (!editedParticipantId) return false;
 
@@ -97,144 +111,21 @@ const ParticipantItem = memo(props => {
     agentType,
   ]);
 
-  const entityIcon = useParticipantEntityIcon(participant);
-
-  const shouldDisableThisItem = useMemo(() => !isParticipantOKForChat(participant), [participant]);
   const canBeActiveInChat = useMemo(() => canParticipantBeActiveInChat(participant), [participant]);
+
   const isToolkitParticipant = useMemo(
     () => participant.entity_name === ChatParticipantType.Toolkits,
     [participant.entity_name],
   );
-  const [versionName, setVersionName] = useState('');
-  const [originalDetails, setOriginalDetails] = useState({});
-  const [hasFetchedDetails, setHasFetchedDetails] = useState(false);
-  const { fetchOriginalDetails } = useFetchParticipantDetails();
-
-  // Monitor MCP token changes for remote MCP toolkits
-  const mcpServerUrl = participant.entity_settings?.mcp_server_url || originalDetails?.settings?.url || '';
-
-  // SharePoint delegated OAuth tracking
-  // sharepoint_configuration only stores a credential stub { elitea_title, private }.
-  // Resolve the full credential via the shared hook.
-  const spConfigRef =
-    isToolkitParticipant && participant.entity_settings?.toolkit_type === 'sharepoint'
-      ? originalDetails?.settings?.sharepoint_configuration
-      : null;
-  const { spConfig, connectionTokenKey: spConnectionTokenKey } = useResolvedSharepointConfig(
-    spConfigRef,
-    entity_meta?.project_id,
-  );
-  const someToolsAreUnavailable = useMemo(() => {
-    if (
-      participant.entity_name === ChatParticipantType.Applications ||
-      participant.entity_name === ChatParticipantType.Pipelines
-    ) {
-      return !!originalDetails?.version_details?.tools?.find(tool => {
-        const availableTools = getSelectedTools(tool?.type);
-        return (
-          !!availableTools?.length &&
-          tool?.settings?.selected_tools?.some(item => !availableTools.includes(item))
-        );
-      });
-    }
-    return false;
-  }, [getSelectedTools, originalDetails?.version_details?.tools, participant.entity_name]);
-
-  const { isLoggedIn: hasRemoteMcpLoggedIn } = useMcpTokenChange(
-    isToolkitParticipant && participant?.entity_settings?.toolkit_type === 'mcp' ? mcpServerUrl : null,
-  );
-
-  const { isLoggedIn: spOAuthLoggedIn } = useMcpTokenChange(
-    spConnectionTokenKey ? { serverUrl: spConnectionTokenKey } : null,
-  );
-
-  const remoteMcpLoggedOut = useMemo(() => {
-    if (!isToolkitParticipant || participant?.entity_settings?.toolkit_type !== 'mcp') {
-      return false;
-    }
-    return !hasRemoteMcpLoggedIn;
-  }, [isToolkitParticipant, participant?.entity_settings?.toolkit_type, hasRemoteMcpLoggedIn]);
-
-  const spOAuthLoggedOut = useMemo(() => {
-    if (!spConfig) return false;
-    return !spOAuthLoggedIn;
-  }, [spConfig, spOAuthLoggedIn]);
 
   const displayName = useMemo(() => {
     return originalDetails?.name || entity_meta?.name || participantName || 'Participant Name';
   }, [originalDetails?.name, entity_meta?.name, participantName]);
 
-  const isPublishedParticipant = entity_meta?.project_id == PUBLIC_PROJECT_ID;
-
-  const isPublishedAgentGone = useMemo(
-    () => isPublishedParticipant && hasFetchedDetails && !originalDetails?.versions?.length,
-    [isPublishedParticipant, hasFetchedDetails, originalDetails?.versions?.length],
-  );
-
-  const isVersionUnavailable = useMemo(
-    () =>
-      isPublishedParticipant &&
-      hasFetchedDetails &&
-      originalDetails?.versions?.length > 0 &&
-      !originalDetails.versions.some(v => v.id === participant.entity_settings?.version_id),
-    [
-      isPublishedParticipant,
-      hasFetchedDetails,
-      originalDetails?.versions,
-      participant.entity_settings?.version_id,
-    ],
-  );
-
-  useValidateApplicationVersion(
-    !isPublishedParticipant &&
-      (participant.entity_name === ChatParticipantType.Applications ||
-        participant.entity_name === ChatParticipantType.Pipelines) &&
-      originalDetails?.version_details?.tools
-      ? {
-          applicationId: entity_meta?.id,
-          projectId: entity_meta?.project_id,
-          versionId: participant.entity_settings?.version_id,
-        }
-      : {},
-  );
-
-  const { totalValidationInfo } = useToolsValidationInfo({
-    applicationId: isPublishedParticipant ? undefined : entity_meta?.id,
-    projectId: entity_meta?.project_id,
-    versionId: participant.entity_settings?.version_id,
-    tools: isPublishedParticipant ? [] : originalDetails?.version_details?.tools || [],
-  });
-
-  useValidateToolkit(
-    isToolkitParticipant
-      ? {
-          toolkitId: entity_meta?.id,
-          projectId: entity_meta?.project_id,
-          forceSkip: !isToolkitParticipant,
-        }
-      : {},
-  );
-
-  const { toolkitValidationInfoList } = useToolkitValidationInfo(
-    isToolkitParticipant
-      ? {
-          projectId: entity_meta?.project_id,
-          toolkitId: entity_meta?.id,
-        }
-      : {},
-  );
-
-  const hasMisconfigurationErrors = totalValidationInfo?.length > 0 || toolkitValidationInfoList?.length > 0;
-
   useEffect(() => {
     if (hasMisconfigurationErrors) assistantRef?.current?.showPopup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMisconfigurationErrors]);
-
-  const mcpIsDisconnected = useMemo(
-    () => isToolkitParticipant && originalDetails?.meta?.mcp && !originalDetails?.online,
-    [isToolkitParticipant, originalDetails],
-  );
 
   const handleEditClick = useCallback(
     event => {
@@ -245,7 +136,6 @@ const ParticipantItem = memo(props => {
     [onEdit, participant],
   );
 
-  // Determine if this participant type can show the edit button
   const showEditButton = useMemo(
     () =>
       participant.entity_name === ChatParticipantType.Toolkits ||
@@ -254,123 +144,16 @@ const ParticipantItem = memo(props => {
     [participant.entity_name],
   );
 
-  // Calculate maxWidth based on participant type and hover state
   const maxWidth = useMemo(() => {
-    if (!isHovering || isBeingEdited) return 'calc(100% - 2.125rem)'; // No buttons visible
+    if (!isHovering || isBeingEdited) return 'calc(100% - 2.125rem)';
 
     if (showEditButton) {
-      return hasRemoteMcpLoggedIn ? 'calc(100% - 8.375rem)' : 'calc(100% - 6rem)'; // Edit + Delete buttons for toolkits and agents and pipelines
+      return hasRemoteMcpLoggedIn ? 'calc(100% - 8.375rem)' : 'calc(100% - 6rem)';
     }
-    return 'calc(100% - 4.375rem)'; // Only Delete button for other participants
+    return 'calc(100% - 4.375rem)';
   }, [isHovering, isBeingEdited, showEditButton, hasRemoteMcpLoggedIn]);
 
   const styles = participantItemStyles({ collapsed, isActive, maxWidth });
-
-  const warningMessage = useMemo(() => {
-    if (isPublishedAgentGone) {
-      return 'Published agent is no longer available';
-    }
-
-    if (isVersionUnavailable) {
-      return 'Published version not available, select another version';
-    }
-
-    if (hasMisconfigurationErrors) {
-      const isPipelineAgent = participant.entity_settings?.agent_type === 'pipeline';
-
-      const getParticipantTypeText = () => {
-        if (participant.entity_name === ChatParticipantType.Applications && !isPipelineAgent) return 'agent';
-
-        return isToolkitParticipant ? 'toolkit' : 'pipeline';
-      };
-
-      return (
-        <>
-          {'Misconfiguration errors found. '}
-          <Typography
-            component="button"
-            variant="bodySmall"
-            onClick={handleEditClick}
-            sx={styles.misconfigurationError}
-          >
-            {`Check the ${getParticipantTypeText()}`}
-          </Typography>
-          .
-        </>
-      );
-    }
-
-    if (shouldDisableThisItem) {
-      if (type === ChatParticipantType.Datasources) return 'Please configure datasource chat settings';
-      if (type === ChatParticipantType.Applications) return 'Please configure agent chat settings';
-
-      return '';
-    }
-
-    if (mcpIsDisconnected) {
-      return `The ${originalDetails.name} mcp server is disconnected. Reconnect it to use.`;
-    }
-
-    if (someToolsAreUnavailable) {
-      return 'Some tools of some toolkit are not available anymore.';
-    }
-    if (remoteMcpLoggedOut) {
-      return (
-        <>
-          {'Server is disconnected!  Reconnect it to use. '}
-          <McpLogInLink values={originalDetails} />
-        </>
-      );
-    }
-
-    if (spOAuthLoggedOut) {
-      return (
-        <>
-          {'SharePoint requires authorization. '}
-          <SharepointLogInLink
-            projectId={entity_meta?.project_id}
-            spConfig={spConfig}
-            toolkitId={entity_meta?.id}
-          />
-        </>
-      );
-    }
-
-    return '';
-  }, [
-    isPublishedAgentGone,
-    isVersionUnavailable,
-    hasMisconfigurationErrors,
-    shouldDisableThisItem,
-    mcpIsDisconnected,
-    someToolsAreUnavailable,
-    remoteMcpLoggedOut,
-    spOAuthLoggedOut,
-    participant.entity_settings?.agent_type,
-    participant.entity_name,
-    handleEditClick,
-    styles.misconfigurationError,
-    isToolkitParticipant,
-    type,
-    originalDetails,
-    entity_meta?.project_id,
-    entity_meta?.id,
-    spConfig,
-  ]);
-
-  const onMCPConnectionStatusChange = useCallback(connected => {
-    setOriginalDetails(prevDetails => ({
-      ...prevDetails,
-      online: connected,
-    }));
-  }, []);
-
-  useMCPParticipantStatusMonitor({
-    projectId: entity_meta?.project_id,
-    mcpType: originalDetails?.type,
-    isMCP: originalDetails?.meta?.mcp,
-    onMCPConnectionStatusChange,
-  });
 
   const onClickHandler = useCallback(() => {
     // Allow deselecting (isActive=true) even if canBeActiveInChat is false
@@ -389,49 +172,19 @@ const ParticipantItem = memo(props => {
   }, []);
 
   useEffect(() => {
-    if (
-      (totalValidationInfo?.length || toolkitValidationInfoList?.length || isPublishedAgentGone) &&
-      isActive
-    ) {
-      onClickItem(undefined); // Deselect if active and not matched
+    if ((hasMisconfigurationErrors || isPublishedAgentGone) && isActive) {
+      onClickItem(undefined);
     }
-  }, [
-    isActive,
-    onClickItem,
-    toolkitValidationInfoList?.length,
-    totalValidationInfo?.length,
-    isPublishedAgentGone,
-  ]);
-
-  useEffect(() => {
-    const getVersions = async () => {
-      if (entity_meta?.id && entity_meta?.project_id) {
-        const data = await fetchOriginalDetails(
-          participant.entity_name,
-          entity_meta.id,
-          entity_meta.project_id,
-        );
-        setOriginalDetails(data);
-        setHasFetchedDetails(true);
-      }
-    };
-    // Only fetch original details if we don't have them yet
-    if (entity_meta?.id && entity_meta?.project_id && !hasFetchedDetails) {
-      getVersions();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entity_meta?.id, entity_meta?.project_id, participant.entity_name]);
+  }, [isActive, onClickItem, hasMisconfigurationErrors, isPublishedAgentGone]);
 
   // Update version name when version_id changes or when original details are loaded
   useEffect(() => {
-    if (originalDetails?.versions && originalDetails.versions.length > 0) {
+    if (originalDetails?.versions && originalDetails.versions.length > 0)
       setVersionName(
         originalDetails.versions.find(version => version.id === participant.entity_settings?.version_id)
           ?.name || '',
       );
-    } else {
-      setVersionName('');
-    }
+    else setVersionName('');
   }, [originalDetails?.versions, participant.entity_settings?.version_id]);
 
   useEffect(() => {
@@ -443,8 +196,7 @@ const ParticipantItem = memo(props => {
 
   const content =
     !shouldDisableThisItem &&
-    !toolkitValidationInfoList?.length &&
-    !totalValidationInfo?.length &&
+    !hasMisconfigurationErrors &&
     !mcpIsDisconnected &&
     !remoteMcpLoggedOut &&
     !spOAuthLoggedOut &&
@@ -638,7 +390,23 @@ const ParticipantItem = memo(props => {
             color="text.attention"
             sx={styles.attentionMessage}
           >
-            {warningMessage}
+            <ParticipantWarning
+              isPublishedAgentGone={isPublishedAgentGone}
+              isVersionUnavailable={isVersionUnavailable}
+              hasMisconfigurationErrors={hasMisconfigurationErrors}
+              shouldDisableThisItem={shouldDisableThisItem}
+              mcpIsDisconnected={mcpIsDisconnected}
+              someToolsAreUnavailable={someToolsAreUnavailable}
+              remoteMcpLoggedOut={remoteMcpLoggedOut}
+              spOAuthLoggedOut={spOAuthLoggedOut}
+              participant={participant}
+              handleEditClick={handleEditClick}
+              isToolkitParticipant={isToolkitParticipant}
+              type={type}
+              originalDetails={originalDetails}
+              entityMeta={entity_meta}
+              spConfig={spConfig}
+            />
           </Typography>
         </Box>
       </StyledTipsContainer>

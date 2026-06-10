@@ -14,6 +14,7 @@ import {
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
+import { useParticipantEntityIcon } from '@/[fsd]/features/chat/participants/lib/hooks';
 import { usePublicProjectAccessCheck } from '@/[fsd]/features/project/lib/hooks';
 import RefreshIcon from '@/assets/refresh-icon.svg?react';
 import VariablesIcon from '@/assets/variables-icon.svg?react';
@@ -23,7 +24,6 @@ import EntityIcon from '@/components/EntityIcon';
 import SettingIcon from '@/components/Icons/SettingIcon';
 import VariableDialog from '@/components/VariableDialog.jsx';
 import useIsActiveParticipantBeingEdited from '@/hooks/chat/useIsActiveParticipantBeingEdited';
-import useParticipantEntityIcon from '@/hooks/chat/useParticipantEntityIcon';
 import useAgentEditorPanelFit from '@/hooks/useAgentEditorPanelFit';
 import useCheckPermission from '@/hooks/useCheckPermission';
 import useNavBlocker from '@/hooks/useNavBlocker';

@@ -7,6 +7,8 @@ import { Box, Typography } from '@mui/material';
 
 import { NewConversationHelpers } from '@/[fsd]/features/chat/lib/helpers';
 import { useNewStartConversationInputKeyDownHandler, useSlashMention } from '@/[fsd]/features/chat/lib/hooks';
+import { getChatParticipantUniqueId } from '@/[fsd]/features/chat/participants/lib/helpers';
+import { useFetchParticipantDetails } from '@/[fsd]/features/chat/participants/lib/hooks';
 import { SlashSuggestionList } from '@/[fsd]/features/chat/ui';
 import { CHAT_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
 import { DEFAULT_STEPS_LIMIT } from '@/[fsd]/shared/lib/constants/llmSettings.constants';
@@ -25,7 +27,6 @@ import {
 } from '@/common/constants';
 import { initializeNewMessages } from '@/common/initializeNewMessages';
 import { generateMessagePayload } from '@/common/messagePayloadUtils';
-import { getChatParticipantUniqueId } from '@/common/utils';
 import { ChatBodyContainer } from '@/components/Chat/StyledComponents';
 import { EllipsisTextWithTooltip } from '@/components/ConversationStarters';
 import useValidateApplicationVersion, {
@@ -33,7 +34,6 @@ import useValidateApplicationVersion, {
 } from '@/hooks/application/useValidateApplicationVersion';
 import useValidateToolkit, { useToolkitValidationInfo } from '@/hooks/application/useValidateToolkit';
 import useChatStreaming from '@/hooks/chat/useChatStreaming';
-import useFetchParticipantDetails from '@/hooks/chat/useFetchParticipantDetails';
 import useLocalActiveParticipant from '@/hooks/chat/useLocalActiveParticipant';
 import useNewConversationAttachments from '@/hooks/chat/useNewConversationAttachments';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';

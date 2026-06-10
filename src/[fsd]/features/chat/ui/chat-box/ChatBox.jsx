@@ -25,6 +25,7 @@ import {
   useSlashMention,
   useTextToSpeech,
 } from '@/[fsd]/features/chat/lib/hooks';
+import { useFetchParticipantDetails } from '@/[fsd]/features/chat/participants/lib/hooks';
 import { SlashSuggestionList, VoiceMiniPlayer } from '@/[fsd]/features/chat/ui';
 import { ChatMessageList } from '@/[fsd]/features/chat/ui/chat-box';
 import { UserMentionList } from '@/[fsd]/features/chat/ui/user-mention-list';
@@ -67,7 +68,6 @@ import { useChatSocket, useStopStreaming } from '@/components/Chat/hooks';
 import InfoIcon from '@/components/Icons/InfoIcon';
 import SocketContext from '@/contexts/SocketContext';
 import useChatStreaming from '@/hooks/chat/useChatStreaming';
-import useFetchParticipantDetails from '@/hooks/chat/useFetchParticipantDetails';
 import useLoadMoreMessages from '@/hooks/chat/useLoadMoreMessages';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
 import useSocket from '@/hooks/useSocket';

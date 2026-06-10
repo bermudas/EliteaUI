@@ -1,48 +1,37 @@
+import { memo } from 'react';
+
 import { Box } from '@mui/material';
 
 import { McpLogoutButton } from '@/[fsd]/features/mcp/ui';
 import { ChatParticipantType, PUBLIC_PROJECT_ID } from '@/common/constants';
-import DeleteParticipantButton from '@/components/DeleteParticipantButton';
-import EditParticipantButton from '@/components/EditParticipantButton';
 
-const ParticipantActions = ({
-  participant,
-  onEdit,
-  onDelete,
-  disabledEdit,
-  disabledDeleteButton = false,
-  showButtons = false,
-  showEditButton = false,
-  hasRemoteMcpLoggedIn,
-  serverUrl,
-}) => {
+import DeleteParticipantButton from './DeleteParticipantButton';
+import EditParticipantButton from './EditParticipantButton';
+
+const ParticipantActions = memo(props => {
+  const {
+    participant,
+    onEdit,
+    onDelete,
+    disabledEdit,
+    disabledDeleteButton = false,
+    showButtons = false,
+    showEditButton = false,
+    hasRemoteMcpLoggedIn,
+    serverUrl,
+  } = props;
   const isPublic = participant.entity_meta?.project_id == PUBLIC_PROJECT_ID;
-  const sx = {
-    width: '28px',
-    height: '28px',
-  };
-
-  // Always render McpLogoutButton when logged in to keep modal state alive
-  // even when hovering away (which hides other buttons)
-  if (!showButtons && hasRemoteMcpLoggedIn) {
-    return (
-      <Box sx={{ display: 'none' }}>
-        <McpLogoutButton serverUrl={serverUrl} />
-      </Box>
-    );
-  }
-
-  if (!showButtons) {
-    return null;
-  }
 
   return (
-    <Box sx={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+    <Box sx={{ display: showButtons ? 'flex' : 'none', gap: '4px', alignItems: 'center' }}>
       {hasRemoteMcpLoggedIn && <McpLogoutButton serverUrl={serverUrl} />}
       {showEditButton && (
         <EditParticipantButton
           id="EditButton"
-          sx={sx}
+          sx={{
+            width: '1.75rem',
+            height: '1.75rem',
+          }}
           participant={participant}
           onEdit={onEdit}
           tooltip={
@@ -60,13 +49,18 @@ const ParticipantActions = ({
       )}
       <DeleteParticipantButton
         id="DeleteButton"
-        sx={sx}
+        sx={{
+          width: '1.75rem',
+          height: '1.75rem',
+        }}
         participant={participant}
         disabled={disabledDeleteButton}
         onDelete={onDelete}
       />
     </Box>
   );
-};
+});
+
+ParticipantActions.displayName = 'ParticipantActions';
 
 export default ParticipantActions;

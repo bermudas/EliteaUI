@@ -25,6 +25,12 @@ import {
   useEditConversation,
   useInternalToolsConfig,
 } from '@/[fsd]/features/chat/lib/hooks';
+import {
+  canParticipantBeActiveInChat,
+  getChatParticipantUniqueId,
+} from '@/[fsd]/features/chat/participants/lib/helpers';
+import { useAddNewParticipants } from '@/[fsd]/features/chat/participants/lib/hooks';
+import { ParticipantsWrapper } from '@/[fsd]/features/chat/participants/ui';
 import { ChatBox } from '@/[fsd]/features/chat/ui';
 import { FIRST_ELITEA_TOUR_ID, useProposePendingTour } from '@/[fsd]/features/interactive-tours';
 import { ChunkHelpers } from '@/[fsd]/shared/lib/helpers';
@@ -39,7 +45,7 @@ import {
   dummyFolder,
   sioEvents,
 } from '@/common/constants';
-import { genConversationId, getChatParticipantUniqueId, getRawParticipantUniqueId } from '@/common/utils';
+import { genConversationId, getRawParticipantUniqueId } from '@/common/utils';
 import AlertDialog from '@/components/AlertDialog';
 import {
   useChatConversationNameUpdateSocket,
@@ -51,7 +57,6 @@ import {
 } from '@/components/Chat/hooks';
 import AttentionIcon from '@/components/Icons/AttentionIcon';
 import useActiveParticipantDetails from '@/hooks/chat/useActiveParticipantDetails';
-import useAddNewParticipants, { canParticipantBeActiveInChat } from '@/hooks/chat/useAddNewParticipants';
 import useAgentCreation from '@/hooks/chat/useAgentCreation';
 import { useAgentEditorUrlSync } from '@/hooks/chat/useAgentEditorUrlSync';
 import useAttachments from '@/hooks/chat/useAttachments';
@@ -92,8 +97,6 @@ import { AddNewUserModal } from '@/pages/NewChat/AddNewUser/AddNewUserModal';
 import NewConversationView from '@/pages/NewChat/NewConversationView';
 import { actions as chatActions } from '@/slices/chat';
 import { actions } from '@/slices/settings';
-
-import ParticipantsWrapper from './Participants/index';
 
 const AgentEditor = ChunkHelpers.lazyWithRetry(() => import('@/pages/NewChat/AgentEditor'));
 const CanvasEditor = ChunkHelpers.lazyWithRetry(() => import('@/pages/NewChat/CanvasEditor'));
@@ -158,7 +161,7 @@ const NewChat = props => {
   const showChatBox = useMemo(() => !isPlayback && !isNewConversation, [isNewConversation, isPlayback]);
 
   const [activeParticipant, setActiveParticipant] = useState();
-  const [collapsedParticipants, setCollapsedParticipants] = useState(false);
+  const [collapsedParticipants, setCollapsedParticipants] = useState(true);
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -179,10 +182,7 @@ const NewChat = props => {
     [sideBarCollapsed, windowWidth],
   );
 
-  const rightPanelWidth = useMemo(
-    () => (sideBarCollapsed ? 252 : windowWidth > 1700 ? 252 : 332 - SIDE_BAR_WIDTH / 2),
-    [sideBarCollapsed, windowWidth],
-  );
+  const rightPanelWidth = 276;
 
   const { clearLocalActiveParticipant, getLocalActiveParticipant, setLocalActiveParticipant } =
     useLocalActiveParticipant();
@@ -886,7 +886,7 @@ const NewChat = props => {
 
   // Collapse tabs when any editor (CanvasEditor, AgentEditor, or ToolkitEditor) is open
   useEffect(() => {
-    setCollapsedParticipants(isAnyEditorOpen);
+    if (isAnyEditorOpen) setCollapsedParticipants(isAnyEditorOpen);
     setCollapsedConversations(isAnyEditorOpen);
   }, [isAnyEditorOpen]);
 
@@ -1712,23 +1712,23 @@ const chatStyles = ({
   const somethingCollapsed = collapsedConversations || collapsedParticipants;
 
   const getChatWidthLG = () => {
-    if (everythingCollapsed) return 'calc(100% - 120px) !important';
+    if (everythingCollapsed) return 'calc(100% - 8.25rem - 1.25rem) !important';
     if (onlyConversationCollapsed) return `calc(100% - ${rightPanelWidth + 60}px) !important`;
-    if (onlyParticipantsCollapsed) return `calc(100% - ${leftPanelWidth + 60}px) !important`;
+    if (onlyParticipantsCollapsed) return `calc(100% - ${leftPanelWidth + 60}px - 1.25rem) !important`;
 
     return `calc(100% - ${rightPanelWidth + leftPanelWidth}px) !important`;
   };
 
   const getChatWidthSM = () => {
-    if (everythingCollapsed) return 'calc(100% - 120px) !important';
-    if (somethingCollapsed) return 'calc(75% - 60px) !important';
+    if (everythingCollapsed) return 'calc(100% - 7.5rem) !important';
+    if (somethingCollapsed) return 'calc(75% - 3.75rem - 1.25rem) !important';
 
     return '50% !important';
   };
 
   return {
     container: {
-      padding: '1rem 1.5rem',
+      padding: isSmallWindow ? '1rem 1.5rem' : '1rem 0rem 1rem 1.5rem',
       boxSizing: 'border-box',
       height: '100vh',
       marginLeft: 0,

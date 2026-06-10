@@ -6,20 +6,20 @@ import StyledTooltip from '@/ComponentsLib/Tooltip';
 import {
   ParticipantCreationPermissionMap,
   ParticipantEntityTypes,
-} from '@/[fsd]/features/chat/lib/constants/participant.constants';
+} from '@/[fsd]/features/chat/participants/lib/constants/participant.constants';
+import { getChatParticipantUniqueId } from '@/[fsd]/features/chat/participants/lib/helpers';
+import { useFetchParticipantDetails } from '@/[fsd]/features/chat/participants/lib/hooks';
 import { ChatParticipantType } from '@/common/constants';
-import { getChatParticipantUniqueId } from '@/common/utils';
 import ParticipantsAccordion from '@/components/ParticipantsAccordion';
 import UnifiedDropdown from '@/components/UnifiedDropdown';
-import useFetchParticipantDetails from '@/hooks/chat/useFetchParticipantDetails';
 import useFilteredEntityItems from '@/hooks/chat/useFilteredEntityItems';
 import useCheckPermission from '@/hooks/useCheckPermission';
 import useIsSmallWindow from '@/hooks/useIsSmallWindow';
 import useToast from '@/hooks/useToast';
 import { useTheme } from '@emotion/react';
 
+import ParticipantsDropdown from '../CollapsedParticipants/CollapsedParticipantsDropdown';
 import ParticipantItem from './ParticipantItem';
-import ParticipantsDropdown from './ParticipantsDropdown';
 
 const EMPTY_STATE_LABEL_BY_ENTITY = {
   [ParticipantEntityTypes.Agent]: 'agents',

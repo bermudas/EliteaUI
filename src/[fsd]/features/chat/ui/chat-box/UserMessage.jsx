@@ -5,6 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 
 import StyledTooltip from '@/ComponentsLib/Tooltip';
+import { useParticipantName } from '@/[fsd]/features/chat/participants/lib/hooks';
 import Markdown from '@/[fsd]/shared/ui/markdown';
 import { ChatParticipantType } from '@/common/constants';
 import CreatedTimeInfo from '@/components/Chat/CreatedTimeInfo';
@@ -21,7 +22,6 @@ import DeleteIcon from '@/components/Icons/DeleteIcon';
 import EditIcon from '@/components/Icons/EditIcon';
 import UserAvatar from '@/components/UserAvatar';
 import useHighlightUserMessage from '@/hooks/chat/useHighlightUserMessage';
-import useParticipantName from '@/hooks/chat/useParticipantName';
 
 const UserMessage = React.forwardRef((props, ref) => {
   const {

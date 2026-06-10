@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 import { IconButton, Typography, useTheme } from '@mui/material';
 
@@ -7,11 +7,12 @@ import { ChatParticipantType } from '@/common/constants';
 import AlertDialog from '@/components/AlertDialog';
 import DeleteIcon from '@/components/Icons/DeleteIcon';
 
-const DeleteParticipantButton = ({ disabled, participant, onDelete, sx, warningMessage }) => {
+const DeleteParticipantButton = memo(props => {
+  const { disabled, participant, onDelete, sx, warningMessage } = props;
+
   const participantName = useParticipantName(participant);
   const theme = useTheme();
 
-  // Derive entity type consistent with Participants UI logic
   const entityType = useMemo(() => {
     const name = participant?.entity_name;
     const agentType = participant?.entity_settings?.agent_type || participant?.agent_type;
@@ -21,7 +22,7 @@ const DeleteParticipantButton = ({ disabled, participant, onDelete, sx, warningM
     if (name === ChatParticipantType.Applications) {
       return agentType === 'pipeline' ? 'pipeline' : 'agent';
     }
-    return undefined; // fall back to generic participant behavior
+    return undefined;
   }, [participant?.agent_type, participant?.entity_name, participant?.entity_settings?.agent_type]);
 
   const dialogTitle = useMemo(() => {
@@ -39,7 +40,6 @@ const DeleteParticipantButton = ({ disabled, participant, onDelete, sx, warningM
           return 'Remove participant?';
       }
     }
-    // keep existing title when a custom warningMessage is supplied by caller
     return 'Remove participant?';
   }, [entityType, warningMessage]);
 
@@ -71,7 +71,9 @@ const DeleteParticipantButton = ({ disabled, participant, onDelete, sx, warningM
         return `Are you sure to remove this participant ${participantName} from the conversation?`;
     }
   }, [entityType, participantName, styledEntityName, warningMessage]);
+
   const [openAlert, setOpenAlert] = useState(false);
+
   const onClickDelete = useCallback(event => {
     event.stopPropagation();
     setOpenAlert(true);
@@ -101,7 +103,7 @@ const DeleteParticipantButton = ({ disabled, participant, onDelete, sx, warningM
         id="DeleteButton"
         sx={sx}
       >
-        <DeleteIcon sx={{ fontSize: '16px' }} />
+        <DeleteIcon sx={styles.deleteIcon} />
       </IconButton>
       <AlertDialog
         title={dialogTitle}
@@ -115,6 +117,15 @@ const DeleteParticipantButton = ({ disabled, participant, onDelete, sx, warningM
       />
     </>
   );
+});
+
+DeleteParticipantButton.displayName = 'DeleteParticipantButton';
+
+/** @type {MuiSx} */
+const styles = {
+  deleteIcon: {
+    fontSize: '1rem',
+  },
 };
 
 export default DeleteParticipantButton;

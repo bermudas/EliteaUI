@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { useFetchParticipantDetails } from '@/[fsd]/features/chat/participants/lib/hooks';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
-
-import useFetchParticipantDetails from './useFetchParticipantDetails';
 
 const useActiveParticipantDetails = ({ activeParticipant, skip }) => {
   const projectId = useSelectedProjectId();
