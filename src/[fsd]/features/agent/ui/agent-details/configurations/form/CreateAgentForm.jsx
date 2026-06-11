@@ -5,13 +5,13 @@ import { useFormikContext } from 'formik';
 import { Box, Typography } from '@mui/material';
 
 import { AgentInput } from '@/[fsd]/features/agent/ui/agent-details/configurations';
+import ApplicationAdvanceSettings from '@/[fsd]/features/agent/ui/agent-details/configurations/ApplicationAdvanceSettings';
 import { AccordionConstants } from '@/[fsd]/shared/lib/constants';
 import { useFieldFocus } from '@/[fsd]/shared/lib/hooks';
 import { Input } from '@/[fsd]/shared/ui';
 import BasicAccordion from '@/[fsd]/shared/ui/accordion/BasicAccordion';
 import { useTagListQuery } from '@/api/tags.js';
 import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH, PROMPT_PAYLOAD_KEY } from '@/common/constants';
-import ApplicationAdvanceSettings from '@/components/ApplicationAdvanceSettings';
 import ApplicationVariables from '@/components/ApplicationVariables';
 import ConversationStarters from '@/components/ConversationStarters';
 import EntityIcon from '@/components/EntityIcon';
@@ -198,7 +198,10 @@ const CreateAgentForm = memo(props => {
       />
       <AgentInput.WelcomeMessageInput style={styles.welcomeMessageInput} />
       <ConversationStarters style={styles.conversationStarters} />
-      <ApplicationAdvanceSettings style={styles.advanceSettings} />
+      <ApplicationAdvanceSettings
+        style={styles.advanceSettings}
+        showIgnoreProjectContext
+      />
     </Box>
   );
 });

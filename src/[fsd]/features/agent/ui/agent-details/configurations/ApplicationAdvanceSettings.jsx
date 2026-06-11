@@ -5,14 +5,12 @@ import { useFormikContext } from 'formik';
 import { Box } from '@mui/material';
 
 import { AccordionConstants } from '@/[fsd]/shared/lib/constants';
-import { Label } from '@/[fsd]/shared/ui';
+import { Checkbox, Input, Label } from '@/[fsd]/shared/ui';
 import BasicAccordion from '@/[fsd]/shared/ui/accordion/BasicAccordion';
 import { MAX_STEP_LIMIT, MIN_STEP_LIMIT } from '@/common/constants';
 
-import FormInput from './FormInput';
-
 const ApplicationAdvanceSettings = memo(props => {
-  const { style, disabled } = props;
+  const { style, disabled, showIgnoreProjectContext = false } = props;
 
   const { values: { version_details } = {}, setFieldValue } = useFormikContext();
 
@@ -74,7 +72,14 @@ const ApplicationAdvanceSettings = memo(props => {
     [inputValidator],
   );
 
-  const styles = useMemo(() => agentAdvanceSettingsStyles(), []);
+  const handleIgnoreToggle = useCallback(
+    e => {
+      setFieldValue('version_details.meta.ignore_project_context', e.target.checked);
+    },
+    [setFieldValue],
+  );
+
+  const styles = useMemo(() => applicationAdvanceSettingsStyles(), []);
 
   const accordionItems = useMemo(
     () => [
@@ -82,7 +87,7 @@ const ApplicationAdvanceSettings = memo(props => {
         title: 'Advanced',
         content: (
           <Box sx={styles.fieldContainer}>
-            <FormInput
+            <Input.StyledInputEnhancer
               value={version_details?.meta?.step_limit ?? ''}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
@@ -102,11 +107,35 @@ const ApplicationAdvanceSettings = memo(props => {
                 max: MAX_STEP_LIMIT,
               }}
             />
+            {showIgnoreProjectContext && (
+              <Box sx={styles.toggleRow}>
+                <Checkbox.BaseCheckbox
+                  checked={version_details?.meta?.ignore_project_context ?? false}
+                  onChange={handleIgnoreToggle}
+                  disabled={disabled}
+                />
+                <Label.InfoLabelWithTooltip
+                  label="Ignore Project Context"
+                  tooltip="When enabled, this agent will not use the project background context in its responses."
+                  variant="bodyMedium"
+                  labelSx={styles.label}
+                />
+              </Box>
+            )}
           </Box>
         ),
       },
     ],
-    [version_details?.meta?.step_limit, handleChange, handleKeyDown, disabled, styles],
+    [
+      version_details?.meta?.step_limit,
+      version_details?.meta?.ignore_project_context,
+      handleChange,
+      handleKeyDown,
+      handleIgnoreToggle,
+      disabled,
+      styles,
+      showIgnoreProjectContext,
+    ],
   );
 
   return (
@@ -122,7 +151,7 @@ const ApplicationAdvanceSettings = memo(props => {
 ApplicationAdvanceSettings.displayName = 'ApplicationAdvanceSettings';
 
 /** @type {MuiSx} */
-const agentAdvanceSettingsStyles = () => ({
+const applicationAdvanceSettingsStyles = () => ({
   accordion: ({ palette }) => ({
     background: `${palette.background.tabPanel} !important`,
   }),
@@ -131,6 +160,13 @@ const agentAdvanceSettingsStyles = () => ({
     flexDirection: 'column',
     gap: '0.75rem',
     marginTop: '0.5rem',
+  },
+  label: ({ palette }) => ({
+    color: palette.text.secondary,
+  }),
+  toggleRow: {
+    display: 'flex',
+    alignItems: 'center',
   },
 });
 
