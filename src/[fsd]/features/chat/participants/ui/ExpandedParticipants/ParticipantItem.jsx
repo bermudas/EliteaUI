@@ -24,14 +24,14 @@ import ParticipantWarning from './ParticipantWarning';
 const ParticipantItem = memo(props => {
   const {
     disabledEdit,
-    participant = {},
     collapsed,
     isActive,
     onClickItem,
     onDelete,
     onEdit,
-    disableTooltip = false,
     editingToolkit,
+    participant = {},
+    disableTooltip = false,
     isAttachement = false,
   } = props;
 

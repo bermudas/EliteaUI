@@ -1,7 +1,5 @@
 import React, { memo, useMemo } from 'react';
 
-import { useSelector } from 'react-redux';
-
 import { Grid } from '@mui/material';
 
 import { ParticipantDetailsProvider } from '@/[fsd]/features/chat/participants/lib/context/ParticipantDetailsContext';
@@ -26,12 +24,6 @@ const ParticipantsWrapper = memo(props => {
     onSelectParticipant,
     onChangeParticipantSettings,
     onEditParticipant,
-    onAddNewUsers,
-    addNewParticipants,
-    onClickClearChat,
-    onShowAgentCreator,
-    onShowToolkitCreator,
-    onShowPipelineCreator,
     setActiveConversation,
     selectedManager,
     newConversationSelectedManager,
@@ -43,8 +35,6 @@ const ParticipantsWrapper = memo(props => {
   const { isSmallWindow } = useIsSmallWindow();
   const { checkPermission } = useCheckPermission();
 
-  const { id: userId } = useSelector(state => state.user);
-
   const disabledAdd = useMemo(
     () =>
       activeConversation?.isPlayback ||
@@ -52,14 +42,6 @@ const ParticipantsWrapper = memo(props => {
       !activeConversation.id ||
       !checkPermission(PERMISSIONS.users.view),
     [activeConversation, checkPermission],
-  );
-
-  const disabledClear = useMemo(
-    () =>
-      activeConversation?.author_id !== userId ||
-      activeConversation?.isPlayback ||
-      !activeConversation?.chat_history?.length,
-    [activeConversation, userId],
   );
 
   if (hidden) return null;
@@ -82,17 +64,10 @@ const ParticipantsWrapper = memo(props => {
           onUpdateParticipant={onChangeParticipantSettings}
           onEditParticipant={onEditParticipant}
           disabledAdd={disabledAdd}
-          onAddUsers={onAddNewUsers}
-          onAddParticipants={addNewParticipants}
-          onClearChatHistory={onClickClearChat}
-          disabledClear={disabledClear}
           editingToolkit={editingToolkit}
           conversationId={
             !activeConversation?.isNew && !activeConversation?.isPlayback ? activeConversation?.id : undefined
           }
-          onShowAgentCreator={onShowAgentCreator}
-          onShowToolkitCreator={onShowToolkitCreator}
-          onShowPipelineCreator={onShowPipelineCreator}
           contextStrategy={activeConversation?.meta?.context_strategy || {}}
           setActiveConversation={setActiveConversation}
           conversationInstructions={activeConversation?.instructions || ''}

@@ -679,9 +679,6 @@ const NewChat = props => {
     onEditToolkit,
     onEditPipeline,
     onEditArtifact,
-    onCreateAgent,
-    onCreateToolkit,
-    onCreatePipeline,
   } = useMutuallyExclusiveEditors({
     //AgentEditor
     onCloseAgentEditor: handleCloseAgentEditor,
@@ -760,10 +757,6 @@ const NewChat = props => {
   useChatMessageSyncSocket({
     onRemoteChatMessageSync,
   });
-
-  const onAddNewUsers = useCallback(() => {
-    setShowAddUserModal(true);
-  }, []);
 
   const onSelectThisParticipant = useCallback(
     selectedParticipant => {
@@ -1219,10 +1212,6 @@ const NewChat = props => {
     }
   }, [isStreaming, activeFolder?.isNew]);
 
-  const onClickClearChat = useCallback(() => {
-    boxRef.current?.onClear?.();
-  }, []);
-
   useEffect(() => {
     if (preProjectId !== projectId) {
       clearUrlConversation();
@@ -1322,12 +1311,6 @@ const NewChat = props => {
         onSelectParticipant,
         onChangeParticipantSettings,
         onEditParticipant,
-        onAddNewUsers,
-        addNewParticipants,
-        onClickClearChat,
-        onShowAgentCreator: onCreateAgent,
-        onShowToolkitCreator: onCreateToolkit,
-        onShowPipelineCreator: onCreatePipeline,
         setActiveConversation,
         selectedManager,
         newConversationSelectedManager,
@@ -1347,12 +1330,6 @@ const NewChat = props => {
       onSelectParticipant,
       onChangeParticipantSettings,
       onEditParticipant,
-      onAddNewUsers,
-      addNewParticipants,
-      onClickClearChat,
-      onCreateAgent,
-      onCreateToolkit,
-      onCreatePipeline,
     ],
   );
 
@@ -1723,7 +1700,7 @@ const chatStyles = ({
     if (everythingCollapsed) return 'calc(100% - 7.5rem) !important';
     if (somethingCollapsed) return 'calc(75% - 3.75rem - 1.25rem) !important';
 
-    return '50% !important';
+    return `calc(100% - ${rightPanelWidth}px - ${leftPanelWidth}px) !important`;
   };
 
   return {
