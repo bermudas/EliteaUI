@@ -241,12 +241,13 @@ const UserMessage = React.forwardRef((props, ref) => {
               }}
             />
           </ChatInputContainer>
+          {attachmentItems?.length > 0 && <MessageAttachmentList items={attachmentItems} />}
           <Box sx={styles.editButtonsContainer}>
             <Button
               variant="elitea"
               color="primary"
               sx={styles.submitButton}
-              disabled={value === content}
+              disabled={value === content || !value.trim()}
               onClick={onClickSubmit}
             >
               Save and apply

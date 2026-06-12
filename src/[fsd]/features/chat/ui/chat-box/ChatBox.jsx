@@ -28,6 +28,7 @@ import {
 import { SlashSuggestionList, VoiceMiniPlayer } from '@/[fsd]/features/chat/ui';
 import { ChatMessageList } from '@/[fsd]/features/chat/ui/chat-box';
 import { UserMentionList } from '@/[fsd]/features/chat/ui/user-mention-list';
+import { useVoiceConfig } from '@/[fsd]/features/chat/voice-config';
 import { CHAT_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
 import { McpAuthHelpers } from '@/[fsd]/features/mcp/lib/helpers';
 import {
@@ -43,7 +44,7 @@ import {
   useRemoveAttachmentsMutation,
   useUpdateParticipantLlmSettingsMutation,
 } from '@/api';
-import { useListModelsQuery } from '@/api/configurations.js';
+import { useGetTtsVoicesQuery, useListModelsQuery } from '@/api/configurations.js';
 import {
   ChatParticipantType,
   PROMPT_PAYLOAD_KEY,
@@ -217,7 +218,36 @@ const ChatBox = forwardRef((props, boxRef) => {
     () => ttsModelsData?.items?.find(m => m.default) ?? ttsModelsData?.items?.[0] ?? null,
     [ttsModelsData],
   );
-  const { speak, stop: stopTTS, isPlaying, spokenRange } = useTextToSpeech({ ttsModel, socket });
+
+  const hasModelTTS = !!(ttsModel && socket);
+  const {
+    config: voiceConfig,
+    setConfig: setVoiceConfig,
+    browserVoices,
+    resolvedBrowserVoice,
+  } = useVoiceConfig({ persist: false });
+  const { data: ttsVoicesData } = useGetTtsVoicesQuery(
+    { projectId: ttsModel?.project_id ?? projectId, modelName: ttsModel?.name ?? '' },
+    { skip: !ttsModel },
+  );
+  const serverVoices = ttsVoicesData?.voices ?? [];
+  const displayVoices = hasModelTTS ? serverVoices : browserVoices;
+
+  const {
+    speak,
+    stop: stopTTS,
+    isPlaying,
+    spokenRange,
+  } = useTextToSpeech({
+    ttsModel,
+    socket,
+    voiceConfig: {
+      voice: resolvedBrowserVoice,
+      voiceId: voiceConfig.voiceId || undefined,
+      rate: voiceConfig.rate,
+      volume: voiceConfig.volume,
+    },
+  });
 
   const handleAutoSpeak = useCallback(
     (text, msgId) => {
@@ -447,6 +477,7 @@ const ChatBox = forwardRef((props, boxRef) => {
               projectId,
               selectedModel,
               participants: activeConversation?.participants || [],
+              attachmentList,
             }),
             project_id: projectId,
             participant_id: realParticipant.id,
@@ -1048,7 +1079,7 @@ const ChatBox = forwardRef((props, boxRef) => {
           chat_history[questionIndex]?.message_items?.filter(
             item => item.item_type === 'attachment_message',
           ) || []
-        ).map(i => ({ name: i.item_details.name })) || [];
+        ).map(i => ({ filepath: i.item_details.filepath })) || [];
       const question_id = chat_history[questionIndex]?.id;
       const leftChatHistory = chat_history.slice(0, questionIndex);
 
@@ -1965,10 +1996,16 @@ const ChatBox = forwardRef((props, boxRef) => {
             conversation_starters={hasStarterBeenSent || isTheUserChattingNow ? [] : conversationStarters}
           />
         )}
-        <VoiceMiniPlayer
-          isPlaying={isPlaying}
-          onStop={stopTTS}
-        />
+        {isPlaying && (
+          <VoiceMiniPlayer
+            voiceConfig={voiceConfig}
+            voices={displayVoices}
+            onVoiceConfigChange={setVoiceConfig}
+            ttsModel={ttsModel}
+            hasModelTTS={hasModelTTS}
+            onStop={stopTTS}
+          />
+        )}
         <Box sx={hitlEditMode ? styles.inputWrapperHitl : styles.inputWrapper}>
           {hitlEditMode && (
             <Box sx={styles.hitlInfoBanner}>
@@ -2108,11 +2145,8 @@ ChatBox.displayName = 'ChatBox';
 /** @type {MuiSx} */
 const chatBoxStyles = () => ({
   container: ({ breakpoints }) => ({
-    [breakpoints.up('lg')]: {
-      height: 'calc(100vh - 10rem)',
-    },
     [breakpoints.down('lg')]: {
-      height: '100vh !important',
+      minHeight: '100vh !important',
     },
   }),
   inputWrapper: {

@@ -73,6 +73,7 @@ const SecretsTable = memo(props => {
   const styles = getStyles(isSafariBrowser);
   const [hoveredRowId, setHoveredRowId] = useState(null);
   const [editingRowsBackup, setEditingRowsBackup] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
   const { checkPermission } = useCheckPermission();
 
   const [addSecret, { isError: isAddingError, error: addingError }] = useSecretAddingMutation();
@@ -143,12 +144,10 @@ const SecretsTable = memo(props => {
 
   const filteredRows = useMemo(() => rows.filter(row => row && row.id != null), [rows]);
   const sortedRows = useMemo(() => {
-    // Don't sort when there's a new row being created to avoid disrupting the editing state
-    if (hasNewRow) {
-      return filteredRows;
-    }
-    return sortData(filteredRows);
-  }, [hasNewRow, filteredRows, sortData]);
+    const newRows = filteredRows.filter(row => row.isNew);
+    const existingRows = filteredRows.filter(row => !row.isNew);
+    return [...newRows, ...sortData(existingRows)];
+  }, [filteredRows, sortData]);
 
   const pagination = usePagination({
     totalRows: sortedRows.length,
@@ -346,6 +345,20 @@ const SecretsTable = memo(props => {
     [rowModesModel],
   );
 
+  const handleValidationChange = useCallback((rowId, field, hasError) => {
+    setValidationErrors(prev => ({
+      ...prev,
+      [`${rowId}-${field}`]: hasError,
+    }));
+  }, []);
+
+  const hasRowValidationErrors = useCallback(
+    rowId => {
+      return validationErrors[`${rowId}-name`] || validationErrors[`${rowId}-secretValue`];
+    },
+    [validationErrors],
+  );
+
   // Custom name cell component for rendering name field
   const renderNameCell = useCallback(
     ({ row }) => {
@@ -363,6 +376,7 @@ const SecretsTable = memo(props => {
             row={row}
             setRows={setRows}
             setRowModesModel={setRowModesModel}
+            onValidationChange={handleValidationChange}
           />
         );
       }
@@ -376,7 +390,7 @@ const SecretsTable = memo(props => {
         </Text.EllipsisTypography>
       );
     },
-    [isRowInEditMode, setRows, setRowModesModel],
+    [isRowInEditMode, setRows, setRowModesModel, handleValidationChange],
   );
 
   const renderCell = useCallback(
@@ -394,6 +408,7 @@ const SecretsTable = memo(props => {
               row={row}
               setRows={setRows}
               setRowModesModel={setRowModesModel}
+              onValidationChange={handleValidationChange}
             />
           );
         }
@@ -414,13 +429,23 @@ const SecretsTable = memo(props => {
 
       return value || '-';
     },
-    [isRowInEditMode, setRowModesModel, setRows, isSafariBrowser, showSecret, projectId, toastInfo],
+    [
+      isRowInEditMode,
+      setRowModesModel,
+      setRows,
+      isSafariBrowser,
+      showSecret,
+      projectId,
+      toastInfo,
+      handleValidationChange,
+    ],
   );
 
   const renderActions = useCallback(
     row => {
       const isEditing = isRowInEditMode(row.id);
       const isSecretVisible = isShowSecretMap[row.id];
+      const hasValidationErrors = hasRowValidationErrors(row.id);
 
       if (isEditing) {
         return (
@@ -429,6 +454,7 @@ const SecretsTable = memo(props => {
               variant="elitea"
               color="tertiary"
               onClick={handleSaveClick(row.id)}
+              disabled={hasValidationErrors}
               sx={styles.actionButton}
             >
               <CheckIcon sx={styles.checkIcon} />
@@ -500,6 +526,7 @@ const SecretsTable = memo(props => {
       handleShowSecret,
       handleActionsMenuClick,
       checkPermission,
+      hasRowValidationErrors,
       styles,
     ],
   );

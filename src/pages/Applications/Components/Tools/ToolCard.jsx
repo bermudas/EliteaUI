@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 
+import { useDisassociateToolkit } from '@/[fsd]/features/agent/lib/hooks';
 import { useSaveAgentToolVariables } from '@/[fsd]/features/agent/lib/hooks/useSaveAgentToolVariables.js';
 import { useMcpTokenChange } from '@/[fsd]/features/mcp/lib/hooks';
 import { McpLogInButton } from '@/[fsd]/features/mcp/ui';
@@ -13,6 +14,7 @@ import { OpenApiDelegatedLoginButton } from '@/[fsd]/features/openapi/ui';
 import { useGetToolkitNameFromSchema } from '@/[fsd]/features/pipelines/flow-editor/lib/hooks/useGetToolkitNameFromSchema.hooks.js';
 import { useResolvedSharepointConfig } from '@/[fsd]/features/sharepoint/lib/hooks/useResolvedSharepointConfig.hooks';
 import { SharepointDelegatedLoginButton } from '@/[fsd]/features/sharepoint/ui';
+import { ToolkitFormHelpers } from '@/[fsd]/features/toolkits/lib/helpers/index.js';
 import { Banner } from '@/[fsd]/shared/ui';
 import { TypographyWithConditionalTooltip } from '@/[fsd]/shared/ui/tooltip';
 import AttachIcon from '@/assets/attach-icon.svg?react';
@@ -28,7 +30,6 @@ import CredentialWarningBanner from '@/components/CredentialWarningBanner';
 import EntityIcon from '@/components/EntityIcon';
 import AttentionIcon from '@/components/Icons/AttentionIcon.jsx';
 import DeleteIcon from '@/components/Icons/DeleteIcon';
-import useDisassociateToolkit from '@/hooks/application/useDisassociateToolkit.js';
 import { useGetToolkitIconMeta } from '@/hooks/application/useLibraryToolkits';
 import {
   useManualValidateApplicationVersion,
@@ -290,8 +291,14 @@ const ToolCard = memo(props => {
     if (tool?.type === 'application') {
       return `Misconfiguration error found. Check the ${entityType}.`;
     }
-
-    return validationInfo;
+    const parsedErrorMessage = ToolkitFormHelpers.parseValidationError(
+      typeof validationInfo === 'object'
+        ? validationInfo
+        : {
+            msg: validationInfo || '',
+          },
+    );
+    return parsedErrorMessage?.message || validationInfo;
   }, [validationInfo, tool, entityType]);
 
   const validationBanner = useMemo(() => {

@@ -95,7 +95,7 @@ const spokenRangeReducer = (prev, next) => {
   return next;
 };
 
-const useTextToSpeech = ({ ttsModel, socket } = {}) => {
+const useTextToSpeech = ({ ttsModel, socket, voiceConfig } = {}) => {
   const [status, setStatus] = useState('idle'); // idle | playing | paused | done | error
   const [spokenRange, setSpokenRange] = useReducer(spokenRangeReducer, null);
 
@@ -107,6 +107,14 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
   const startOffsetRef = useRef(0);
   const lastBoundaryRef = useRef(0);
   const pausedOffsetRef = useRef(0);
+  // Wall-clock time (performance.now()) when the current utterance actually started
+  // playing. Set in utterance.onstart. Used by the browser TTS RAF loop to estimate
+  // the current word position when onboundary events don't fire (common in Chrome).
+  const browserSpeechStartTimeRef = useRef(null);
+  // Wall-clock time of the most recent onboundary event for this utterance.
+  // When this is recent (< 200 ms ago) the browser is firing boundary events
+  // (Safari / Firefox) and the RAF loop yields to them instead of overwriting.
+  const lastBoundaryTimeRef = useRef(null);
 
   // ── Model TTS (Web Audio) refs ────────────────────────────────────────────
   const audioContextRef = useRef(null);
@@ -121,6 +129,17 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
   const allChunksReceivedRef = useRef(false);
   // True only when the user explicitly paused — distinguishes user-pause from browser auto-suspend
   const userPausedRef = useRef(false);
+  // Mirror of voiceConfig as a ref so the tts_done handler (closed over at mount)
+  // can read the latest value without being in the effect's dependency list.
+  const voiceConfigRef = useRef(voiceConfig);
+  // Mirror of socket so the RAF loop can emit tts_next without being in its dep array.
+  const socketRef = useRef(socket);
+  // Index of the next sentence waypoint for which tts_next has not yet been emitted.
+  // Counts up as the RAF loop emits ACKs; reset to 0 at the start of each session.
+  const sentenceNextAckedRef = useRef(0);
+  // Set to true when voice/speed settings change during playback so the RAF loop
+  // emits tts_next immediately instead of waiting for the buffer to drain.
+  const forceNextAckRef = useRef(false);
   const rafRef = useRef(null);
   // Self-calibrating chars/second rate. Measured from the previous session's
   // (text.length / totalDuration) and reused for the linear estimation phase
@@ -162,26 +181,56 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
   // Model TTS helpers
   // ─────────────────────────────────────────────────────────────────────────
 
-  const ensureAudioContext = useCallback((sampleRate = 24000) => {
-    if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-      // Match the context sample rate to the audio to eliminate SRC artifacts
-      audioContextRef.current = new AudioContext({ sampleRate });
-      nextStartTimeRef.current = 0;
-      scheduledSourcesRef.current = [];
-      // Master gain node — all chunk gain nodes connect here instead of directly
-      // to destination, so we can schedule a fade-out at end-of-stream to prevent
-      // the DC-offset click that occurs when the last PCM buffer ends abruptly.
-      const masterGain = audioContextRef.current.createGain();
-      masterGain.connect(audioContextRef.current.destination);
-      masterGainRef.current = masterGain;
-      // Resume immediately after creation to satisfy browser autoplay policy
-      if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
+  const ensureAudioContext = useCallback(
+    (sampleRate = 24000) => {
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+        // Match the context sample rate to the audio to eliminate SRC artifacts
+        audioContextRef.current = new AudioContext({ sampleRate });
+        nextStartTimeRef.current = 0;
+        scheduledSourcesRef.current = [];
+        // Master gain node — all chunk gain nodes connect here instead of directly
+        // to destination, so we can schedule a fade-out at end-of-stream to prevent
+        // the DC-offset click that occurs when the last PCM buffer ends abruptly.
+        const masterGain = audioContextRef.current.createGain();
+        masterGain.gain.value = voiceConfig?.volume ?? 1.0;
+        masterGain.connect(audioContextRef.current.destination);
+        masterGainRef.current = masterGain;
+        // Resume immediately after creation to satisfy browser autoplay policy
+        if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume();
+        }
       }
+      // Do NOT auto-resume an existing context here — the user may have explicitly paused it
+      return audioContextRef.current;
+    },
+    [voiceConfig?.volume],
+  );
+
+  // Keep voiceConfigRef and socketRef in sync so RAF-loop closures always read current values
+  useEffect(() => {
+    voiceConfigRef.current = voiceConfig;
+  }, [voiceConfig]);
+
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
+
+  // When voice or speed changes DURING active playback, signal the RAF loop to
+  // emit tts_next immediately so the new settings reach the backend without delay.
+  // Guard with playStartTimeRef so changes before playback begins are ignored —
+  // they would otherwise set force=true and fire the first ACK prematurely.
+  useEffect(() => {
+    if (playStartTimeRef.current !== null) {
+      forceNextAckRef.current = true;
     }
-    // Do NOT auto-resume an existing context here — the user may have explicitly paused it
-    return audioContextRef.current;
-  }, []);
+  }, [voiceConfig?.voiceId, voiceConfig?.rate]);
+
+  // Live volume change — ramp to avoid click artifact when volume slider moves during playback
+  useEffect(() => {
+    const ctx = audioContextRef.current;
+    if (!masterGainRef.current || !ctx || ctx.state === 'closed') return;
+    masterGainRef.current.gain.linearRampToValueAtTime(voiceConfig?.volume ?? 1.0, ctx.currentTime + 0.05);
+  }, [voiceConfig?.volume]);
 
   const stopModelAudio = useCallback(() => {
     if (rafRef.current !== null) {
@@ -207,6 +256,8 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
     allChunksReceivedRef.current = false;
     charTimelineRef.current = null;
     sentenceWaypointsRef.current = [];
+    sentenceNextAckedRef.current = 0;
+    forceNextAckRef.current = false;
     pendingChunkRef.current = null;
     newSentenceRef.current = true;
     clearInterval(schedulerTimerRef.current);
@@ -332,46 +383,66 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
   // Browser SpeechSynthesis helpers
   // ─────────────────────────────────────────────────────────────────────────
 
-  const startUtterance = useCallback((text, offset) => {
-    const textToSpeak = offset > 0 ? text.slice(offset) : text;
-    if (!textToSpeak.trim()) {
-      setStatus('done');
-      setSpokenRange(null);
-      return;
-    }
+  const startUtterance = useCallback(
+    (text, offset) => {
+      const textToSpeak = offset > 0 ? text.slice(offset) : text;
+      if (!textToSpeak.trim()) {
+        setStatus('done');
+        setSpokenRange(null);
+        return;
+      }
 
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utteranceRef.current = utterance;
-    startOffsetRef.current = offset;
-    lastBoundaryRef.current = 0;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utteranceRef.current = utterance;
+      startOffsetRef.current = offset;
+      lastBoundaryRef.current = 0;
+      browserSpeechStartTimeRef.current = null;
+      lastBoundaryTimeRef.current = null;
 
-    utterance.onstart = () => setStatus('playing');
+      // Build a char-timeline for the remaining text so the RAF polling loop
+      // can estimate the current word position even when onboundary doesn't fire.
+      const speechRate = calibratedRateRef.current * (voiceConfig?.rate ?? 1.0);
+      charTimelineRef.current = buildCharTimeline(textToSpeak, speechRate);
 
-    utterance.onend = () => {
-      if (utteranceRef.current !== utterance) return;
-      utteranceRef.current = null;
-      setStatus('done');
-      setSpokenRange(null);
-    };
+      // Apply voice config to every utterance, including resume-from-pause.
+      // Without this Chrome may silently assign a different voice to each utterance.
+      if (voiceConfig?.voice) utterance.voice = voiceConfig.voice;
+      utterance.rate = voiceConfig?.rate ?? 1.0;
+      utterance.volume = voiceConfig?.volume ?? 1.0;
 
-    utterance.onerror = e => {
-      if (utteranceRef.current !== utterance) return;
-      if (e.error === 'interrupted' || e.error === 'canceled') return;
-      utteranceRef.current = null;
-      setStatus('error');
-      setSpokenRange(null);
-    };
+      utterance.onstart = () => {
+        browserSpeechStartTimeRef.current = performance.now();
+        setStatus('playing');
+      };
 
-    utterance.onboundary = e => {
-      if (e.name !== 'word') return;
-      lastBoundaryRef.current = e.charIndex;
-      const absStart = offset + e.charIndex;
-      setSpokenRange({ start: absStart, end: absStart + (e.charLength ?? 1) });
-    };
+      utterance.onend = () => {
+        if (utteranceRef.current !== utterance) return;
+        utteranceRef.current = null;
+        setStatus('done');
+        setSpokenRange(null);
+      };
 
-    setStatus('playing');
-    window.speechSynthesis.speak(utterance);
-  }, []);
+      utterance.onerror = e => {
+        if (utteranceRef.current !== utterance) return;
+        if (e.error === 'interrupted' || e.error === 'canceled') return;
+        utteranceRef.current = null;
+        setStatus('error');
+        setSpokenRange(null);
+      };
+
+      utterance.onboundary = e => {
+        if (e.name !== 'word') return;
+        lastBoundaryRef.current = e.charIndex;
+        lastBoundaryTimeRef.current = performance.now();
+        const absStart = offset + e.charIndex;
+        setSpokenRange({ start: absStart, end: absStart + (e.charLength ?? 1) });
+      };
+
+      setStatus('playing');
+      window.speechSynthesis.speak(utterance);
+    },
+    [voiceConfig],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
@@ -388,6 +459,8 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
         socket.emit(sioEvents.tts_stop, {});
         stopModelAudio();
         sentenceWaypointsRef.current = [];
+        sentenceNextAckedRef.current = 0;
+        forceNextAckRef.current = false;
         fullTextRef.current = text;
         // Build punctuation-aware timeline for this session's text.
         // Uses the calibrated rate from the previous session (or the default
@@ -409,6 +482,8 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
           model_name: ttsModel.name,
           model_project_id: ttsModel.project_id,
           text,
+          voice: voiceConfig?.voiceId || undefined,
+          speed: voiceConfig?.rate ?? 1.0,
         });
         setStatus('playing');
         setSpokenRange(null);
@@ -420,7 +495,16 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
         startUtterance(text, 0);
       }
     },
-    [hasModelTTS, ttsModel, socket, stopModelAudio, startUtterance, ensureAudioContext, scheduleFromQueue],
+    [
+      hasModelTTS,
+      ttsModel,
+      socket,
+      voiceConfig,
+      stopModelAudio,
+      startUtterance,
+      ensureAudioContext,
+      scheduleFromQueue,
+    ],
   );
 
   const pause = useCallback(() => {
@@ -537,6 +621,8 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
         // yet — using enqueued count gives the correct absolute playback position
         // regardless of scheduling lag.
         const audioTime = totalEnqueuedSamplesRef.current / sampleRateRef.current;
+        // Record waypoint — the RAF loop will emit tts_next when playback
+        // approaches this boundary, pacing the backend to actual playback speed.
         sentenceWaypointsRef.current.push({ charPos: char_end, audioTime });
         return;
       }
@@ -612,6 +698,39 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
       // Subtract outputLatency so the highlight tracks what the user actually hears,
       // not what has been sent to the audio hardware buffer.
       const elapsed = ctx.currentTime - (ctx.outputLatency ?? 0) - playStartTimeRef.current;
+
+      // ── tts_next pacing ──────────────────────────────────────────────────────
+      // ACK the backend when elapsed playback time reaches LEAD_TIME_S seconds
+      // before the END of the PREVIOUS sentence.  This keeps the backend exactly
+      // 1 sentence ahead: it starts generating sentence N+1 while sentence N-1
+      // still has LEAD_TIME_S seconds left to play.
+      //
+      //   nextAcked == 0  → no previous boundary; fire immediately so sentence 2
+      //                     is ready before sentence 1 ends.
+      //   nextAcked >  0  → fire when elapsed >=
+      //                       waypoints[nextAcked-1].audioTime – LEAD_TIME_S
+      //
+      // Short sentences (duration < LEAD_TIME_S) will still cascade immediately
+      // because the condition is negative — unavoidable without risking a gap.
+      // Longer sentences are paced one-per-sentence so the backend never runs
+      // far ahead of playback, keeping voice/speed changes responsive.
+      //
+      // forceNextAckRef: fires immediately when voice/speed changes mid-playback
+      // so the new settings take effect at the very next sentence boundary.
+      const LEAD_TIME_S = 3;
+      const nextAcked = sentenceNextAckedRef.current;
+      if (nextAcked < sentenceWaypointsRef.current.length) {
+        const prevAudioTime = nextAcked > 0 ? sentenceWaypointsRef.current[nextAcked - 1].audioTime : 0;
+        if (forceNextAckRef.current || elapsed >= prevAudioTime - LEAD_TIME_S) {
+          socketRef.current?.emit(sioEvents.tts_next, {
+            voice: voiceConfigRef.current?.voiceId || undefined,
+            speed: voiceConfigRef.current?.rate ?? 1.0,
+          });
+          sentenceNextAckedRef.current = nextAcked + 1;
+          forceNextAckRef.current = false;
+        }
+      }
+
       const text = fullTextRef.current;
       const totalDuration = totalDurationRef.current;
       const allReceived = allChunksReceivedRef.current;
@@ -682,6 +801,76 @@ const useTextToSpeech = ({ ttsModel, socket } = {}) => {
         setSpokenRange(null);
         rafRef.current = null;
         return;
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [hasModelTTS, status]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RAF loop — word highlighting fallback for browser SpeechSynthesis
+  //
+  // Chrome's onboundary events are unreliable (often don't fire for word
+  // boundaries at all). This loop estimates the current word using a
+  // char-timeline built at utterance start.
+  //
+  // Safari and Firefox fire onboundary correctly. The moment the first
+  // boundary event fires for an utterance, this loop exits permanently
+  // (lastBoundaryTimeRef becomes non-null) and onboundary drives the
+  // highlight alone. Running both simultaneously causes the back-and-forth
+  // jump the user sees when the RAF estimate and onboundary positions differ.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (hasModelTTS || status !== 'playing') return;
+
+    const tick = () => {
+      // Wait until onstart fires and records the start time
+      if (browserSpeechStartTimeRef.current === null) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      // If any boundary event has fired for this utterance the browser supports
+      // onboundary (Safari / Firefox). Exit the RAF loop entirely — onboundary
+      // drives the highlight from here on so the two mechanisms don't conflict.
+      if (lastBoundaryTimeRef.current !== null) {
+        rafRef.current = null;
+        return;
+      }
+
+      const now = performance.now();
+      const elapsed = (now - browserSpeechStartTimeRef.current) / 1000;
+      const text = fullTextRef.current;
+      const offset = startOffsetRef.current;
+
+      if (elapsed >= 0 && text) {
+        const timeline = charTimelineRef.current;
+        let relativePos;
+        if (timeline) {
+          relativePos = findCharAtTime(timeline.times, elapsed);
+        } else {
+          relativePos = Math.min(Math.floor(elapsed * calibratedRateRef.current), text.length - offset - 1);
+        }
+        const absPos = offset + relativePos;
+
+        // Advance past whitespace to land on a word character
+        let pos = absPos;
+        while (pos < text.length && /\s/.test(text[pos])) pos++;
+        let wordStart = pos;
+        let wordEnd = pos;
+        while (wordStart > 0 && !/\s/.test(text[wordStart - 1])) wordStart--;
+        while (wordEnd < text.length && !/\s/.test(text[wordEnd])) wordEnd++;
+        if (wordEnd > wordStart) setSpokenRange({ start: wordStart, end: wordEnd });
       }
 
       rafRef.current = requestAnimationFrame(tick);

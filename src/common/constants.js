@@ -18,6 +18,16 @@ export const VITE_PUBLIC_PROJECT_ID = getEnvVar('VITE_PUBLIC_PROJECT_ID');
 export const ALLOW_PROJECT_OWN_LLMS = getEnvVar('allow_project_own_llms', true);
 export const ELITEA_ASSISTANT_ENABLED = getEnvVar('VITE_ELITEA_ASSISTANT', false);
 
+const isFlagEnabled = (val, defaultVal) => {
+  if (val === undefined || val === null) return defaultVal;
+  return val === '1' || val === 1 || val === true;
+};
+export const VOICE_FEATURES_ENABLED = isFlagEnabled(getEnvVar('VITE_VOICE_FEATURES_ENABLED'), true);
+export const VOICE_FEATURES_TEMPORARILY_DISABLED = isFlagEnabled(
+  getEnvVar('VITE_VOICE_FEATURES_TEMPORARILY_DISABLED'),
+  false,
+);
+
 export const MISSING_ENVS = [
   { key: 'VITE_SERVER_URL', value: VITE_SERVER_URL },
   { key: 'VITE_BASE_URI', value: VITE_BASE_URI },
@@ -573,6 +583,10 @@ export const PERMISSIONS = {
     create: 'configuration.users.users.create',
     delete: 'configuration.users.users.delete',
   },
+  projectContext: {
+    view: 'models.project_context.view',
+    edit: 'models.project_context.edit',
+  },
   secrets: {
     view: 'configuration.secrets.secret.view',
     list: 'configuration.secrets.secret.list', //show/hide secrets tab
@@ -949,6 +963,7 @@ export const sioEvents = {
   // Server-side TTS (text-to-speech via model API)
   tts_start: 'tts_start',
   tts_stop: 'tts_stop',
+  tts_next: 'tts_next',
   tts_audio_chunk: 'tts_audio_chunk',
   tts_done: 'tts_done',
   tts_error: 'tts_error',
