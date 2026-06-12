@@ -137,6 +137,12 @@ const ChatBox = forwardRef((props, boxRef) => {
     onAddNewUsers,
     isUpdatingInternalToolsConfig,
 
+    // Participant management (for PlusChatButton submenus)
+    onCreateAgent,
+    onCreatePipeline,
+    onCreateToolkit,
+    onDeleteParticipant,
+
     //Unsaved LLM settings
     unsavedLLMSettings,
     setUnsavedLLMSettings,
@@ -2059,6 +2065,13 @@ const ChatBox = forwardRef((props, boxRef) => {
             onAddNewUsers={onAddNewUsers}
             internal_tools={activeConversation?.meta?.internal_tools || []}
             projectId={projectId}
+            // Participant management (for PlusChatButton submenus)
+            onSelectParticipant={onSelectThisParticipant}
+            onCreateAgent={onCreateAgent}
+            onCreatePipeline={onCreatePipeline}
+            onCreateToolkit={onCreateToolkit}
+            onDeleteParticipant={onDeleteParticipant}
+            participants={activeConversation?.participants || []}
             slashHighlights={slashHighlightRanges}
             isSpeakingMode={isSpeakingMode}
             onSpeakingModeToggle={() => setIsSpeakingMode(v => !v)}

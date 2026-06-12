@@ -17,7 +17,7 @@ const emptyTagIds = []; // Stable reference to prevent infinite re-renders
 /**
  * Custom hook to provide data for unified dropdowns (agents, pipelines, toolkits)
  */
-export const useDropdownData = ({ agentQuery, pipelineQuery, toolkitQuery, mcpQuery }) => {
+export const useDropdownData = ({ agentQuery, pipelineQuery, toolkitQuery, mcpQuery, skip = false }) => {
   const projectId = useSelectedProjectId();
   const theme = useTheme();
   const [isLoadingMoreToolkit, setIsLoadingMoreToolkit] = useState(false);
@@ -36,6 +36,7 @@ export const useDropdownData = ({ agentQuery, pipelineQuery, toolkitQuery, mcpQu
     pageSize,
     selectedTagIds: emptyTagIds,
     agents_type: 'classic',
+    forceSkip: skip,
   });
 
   // Load pipelines (applications) with type 'pipeline'
@@ -51,6 +52,7 @@ export const useDropdownData = ({ agentQuery, pipelineQuery, toolkitQuery, mcpQu
     pageSize,
     selectedTagIds: emptyTagIds,
     agents_type: 'pipeline',
+    forceSkip: skip,
   });
 
   // Load public agents (applications) with type 'classic'
@@ -66,6 +68,7 @@ export const useDropdownData = ({ agentQuery, pipelineQuery, toolkitQuery, mcpQu
     pageSize,
     selectedTagIds: emptyTagIds,
     agents_type: 'classic',
+    forceSkip: skip,
   });
 
   // Load toolkits
@@ -88,7 +91,7 @@ export const useDropdownData = ({ agentQuery, pipelineQuery, toolkitQuery, mcpQu
       },
     },
     {
-      skip: !projectId,
+      skip: !projectId || skip,
     },
   );
 
@@ -130,7 +133,7 @@ export const useDropdownData = ({ agentQuery, pipelineQuery, toolkitQuery, mcpQu
       },
     },
     {
-      skip: !projectId,
+      skip: !projectId || skip,
     },
   );
 

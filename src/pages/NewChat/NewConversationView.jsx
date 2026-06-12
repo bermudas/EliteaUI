@@ -825,7 +825,7 @@ const NewConversationView = forwardRef(
           <Box sx={styles.inputContainer}>
             <NewChatInput
               fromTheChat
-              placeholder="Type your message. Use # to search and add AI assistants to conversation."
+              placeholder="Type your message..."
               ref={chatInput}
               onSend={onSend}
               isLoading={isSending || isFetchingParticipant || isUploadingAttachments}

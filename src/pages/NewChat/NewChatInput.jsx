@@ -81,6 +81,14 @@ const NewChatInput = forwardRef((props, ref) => {
     internal_tools = [],
     projectId,
 
+    // Participant management (for PlusChatButton submenus)
+    onSelectParticipant,
+    onCreateAgent,
+    onCreatePipeline,
+    onCreateToolkit,
+    onDeleteParticipant,
+    participants = [],
+
     slashHighlights = [],
 
     // Speaking mode
@@ -239,6 +247,12 @@ const NewChatInput = forwardRef((props, ref) => {
                   onInternalToolsConfigChange={onInternalToolsConfigChange}
                   internal_tools={internal_tools}
                   disableInternalTools={isLoading || isStreaming}
+                  onSelectParticipant={onSelectParticipant}
+                  onCreateAgent={onCreateAgent}
+                  onCreatePipeline={onCreatePipeline}
+                  onCreateToolkit={onCreateToolkit}
+                  onDeleteParticipant={onDeleteParticipant}
+                  participants={participants}
                 />
               )}
               {!hideAttachments && !fromTheChat && (

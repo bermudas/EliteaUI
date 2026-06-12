@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useCallback, useRef, useState } from 'react';
+import React, { forwardRef, memo, useCallback, useMemo, useRef, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 
@@ -15,6 +15,7 @@ import {
   useTheme,
 } from '@mui/material';
 
+import { useApplicationSubmenu } from '@/[fsd]/features/chat/lib/hooks';
 import { useAvailableInternalTools } from '@/[fsd]/shared/lib/hooks';
 import { Switch, Text } from '@/[fsd]/shared/ui';
 import FlowIcon from '@/assets/flow-icon.svg?react';
@@ -28,14 +29,38 @@ import UsersIcon from '@/components/Icons/UsersIcon';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
 
 import AttachmentButton from './AttachmentButton';
+import PlusChatSubmenu from './PlusChatSubmenu';
+
+const SUBMENU_KEYS = {
+  INTERNAL_TOOLS: 'internalTools',
+  AGENTS: 'agents',
+  PIPELINES: 'pipelines',
+  TOOLKITS: 'toolkits',
+  MCPS: 'mcps',
+};
 
 const EXPANDABLE_ITEMS = [
-  { key: 'internalTools', label: 'Internal Tools', Icon: ValueIcon },
-  { key: 'agents', label: 'Agents', Icon: ApplicationsIcon },
-  { key: 'pipelines', label: 'Pipelines', Icon: FlowIcon },
-  { key: 'toolkits', label: 'Toolkits', Icon: ToolIcon },
-  { key: 'mcps', label: 'MCPs', Icon: MCPIcon },
+  { key: SUBMENU_KEYS.INTERNAL_TOOLS, label: 'Internal Tools', Icon: ValueIcon },
+  { key: SUBMENU_KEYS.AGENTS, label: 'Agents', Icon: ApplicationsIcon },
+  { key: SUBMENU_KEYS.PIPELINES, label: 'Pipelines', Icon: FlowIcon },
+  { key: SUBMENU_KEYS.TOOLKITS, label: 'Toolkits', Icon: ToolIcon },
+  { key: SUBMENU_KEYS.MCPS, label: 'MCPs', Icon: MCPIcon },
 ];
+
+const SEARCHABLE_KEYS = [
+  SUBMENU_KEYS.AGENTS,
+  SUBMENU_KEYS.PIPELINES,
+  SUBMENU_KEYS.TOOLKITS,
+  SUBMENU_KEYS.MCPS,
+];
+
+const PAPER_STYLE_MAP = {
+  [SUBMENU_KEYS.INTERNAL_TOOLS]: 'internalToolsPaper',
+  [SUBMENU_KEYS.TOOLKITS]: 'toggleSubmenuPaper',
+  [SUBMENU_KEYS.MCPS]: 'toggleSubmenuPaper',
+  [SUBMENU_KEYS.AGENTS]: 'entitySubmenuPaper',
+  [SUBMENU_KEYS.PIPELINES]: 'entitySubmenuPaper',
+};
 
 const PlusChatButton = forwardRef(props => {
   const {
@@ -48,6 +73,12 @@ const PlusChatButton = forwardRef(props => {
     onInternalToolsConfigChange,
     internal_tools = [],
     disableInternalTools = false,
+    onSelectParticipant,
+    onDeleteParticipant,
+    onCreateAgent,
+    onCreatePipeline,
+    onCreateToolkit,
+    participants = [],
   } = props;
 
   const theme = useTheme();
@@ -77,6 +108,24 @@ const PlusChatButton = forwardRef(props => {
     setHoveredAnchorEl(null);
   }, []);
 
+  const { agents, pipelines, toolkits, mcps } = useApplicationSubmenu({
+    participants,
+    onSelectParticipant,
+    onDeleteParticipant,
+    onClose: handleClose,
+    isOpen,
+  });
+
+  const submenuMap = useMemo(
+    () => ({
+      [SUBMENU_KEYS.AGENTS]: agents,
+      [SUBMENU_KEYS.PIPELINES]: pipelines,
+      [SUBMENU_KEYS.TOOLKITS]: toolkits,
+      [SUBMENU_KEYS.MCPS]: mcps,
+    }),
+    [agents, pipelines, toolkits, mcps],
+  );
+
   const handleClickAway = useCallback(
     event => {
       if (subMenuRef.current?.contains(event.target)) return;
@@ -85,11 +134,19 @@ const PlusChatButton = forwardRef(props => {
     [handleClose],
   );
 
-  const handleItemHover = useCallback((key, event) => {
-    clearTimeout(hoverTimeoutRef.current);
-    setHoveredItem(key);
-    setHoveredAnchorEl(event.currentTarget);
-  }, []);
+  const handleItemHover = useCallback(
+    (key, event) => {
+      clearTimeout(hoverTimeoutRef.current);
+      setHoveredItem(prev => {
+        if (prev && prev !== key && submenuMap[prev]?.resetSearch) {
+          submenuMap[prev].resetSearch();
+        }
+        return key;
+      });
+      setHoveredAnchorEl(event.currentTarget);
+    },
+    [submenuMap],
+  );
 
   const handleItemLeave = useCallback(() => {
     hoverTimeoutRef.current = setTimeout(() => {
@@ -107,12 +164,140 @@ const PlusChatButton = forwardRef(props => {
     setHoveredAnchorEl(null);
   }, []);
 
-  const handleInviteUsers = useCallback(() => {
-    handleClose();
-    onInviteUsers?.();
-  }, [handleClose, onInviteUsers]);
+  const handleCloseAndCall = useCallback(
+    (callback, ...args) => {
+      handleClose();
+      callback?.(...args);
+    },
+    [handleClose],
+  );
+
+  const handleCreateAgent = useCallback(
+    () => handleCloseAndCall(onCreateAgent),
+    [handleCloseAndCall, onCreateAgent],
+  );
+
+  const handleCreatePipeline = useCallback(
+    () => handleCloseAndCall(onCreatePipeline),
+    [handleCloseAndCall, onCreatePipeline],
+  );
+
+  const handleCreateToolkit = useCallback(
+    () => handleCloseAndCall(onCreateToolkit),
+    [handleCloseAndCall, onCreateToolkit],
+  );
+
+  const handleCreateMCP = useCallback(
+    () => handleCloseAndCall(onCreateToolkit, true),
+    [handleCloseAndCall, onCreateToolkit],
+  );
+
+  const handleInviteUsers = useCallback(
+    () => handleCloseAndCall(onInviteUsers),
+    [handleCloseAndCall, onInviteUsers],
+  );
+
+  const submenuConfigs = useMemo(
+    () => ({
+      [SUBMENU_KEYS.AGENTS]: {
+        searchPlaceholder: 'Search agents...',
+        showCreateNew: !!onCreateAgent,
+        createNewLabel: 'Create New Agent',
+        onCreateNew: handleCreateAgent,
+        emptyMessage: 'No agents available',
+        noResultsMessage: 'No agents found',
+      },
+      [SUBMENU_KEYS.PIPELINES]: {
+        searchPlaceholder: 'Search pipelines...',
+        showCreateNew: !!onCreatePipeline,
+        createNewLabel: 'Create New Pipeline',
+        onCreateNew: handleCreatePipeline,
+        emptyMessage: 'No pipelines available',
+        noResultsMessage: 'No pipelines found',
+      },
+      [SUBMENU_KEYS.TOOLKITS]: {
+        searchPlaceholder: 'Search toolkits...',
+        showCreateNew: !!onCreateToolkit,
+        createNewLabel: 'Create New Toolkit',
+        onCreateNew: handleCreateToolkit,
+        emptyMessage: 'No toolkits available',
+        noResultsMessage: 'No toolkits found',
+        showToggle: true,
+        showPublicLabel: false,
+      },
+      [SUBMENU_KEYS.MCPS]: {
+        searchPlaceholder: 'Search MCPs...',
+        showCreateNew: !!onCreateToolkit,
+        createNewLabel: 'Create New MCP',
+        onCreateNew: handleCreateMCP,
+        emptyMessage: 'No MCPs available',
+        noResultsMessage: 'No MCPs found',
+        showToggle: true,
+        showPublicLabel: false,
+      },
+    }),
+    [
+      onCreateAgent,
+      onCreatePipeline,
+      onCreateToolkit,
+      handleCreateAgent,
+      handleCreatePipeline,
+      handleCreateToolkit,
+      handleCreateMCP,
+    ],
+  );
 
   const styles = plusChatButtonStyles(theme);
+  const paperStyleKey = PAPER_STYLE_MAP[hoveredItem] || 'subPaper';
+
+  const renderSubmenuContent = useCallback(() => {
+    if (hoveredItem === SUBMENU_KEYS.INTERNAL_TOOLS && availableTools.length > 0) {
+      return availableTools.map(tool => (
+        <Switch.BaseSwitch
+          key={tool.name}
+          label={tool.title}
+          checked={internal_tools.includes(tool.name)}
+          disabled={disableInternalTools}
+          onChange={(_, checkedValue) =>
+            onInternalToolsConfigChange?.({ key: tool.name, value: checkedValue })
+          }
+          width="100%"
+          infoTooltip={<Text.TextWithLink {...tool.infoTooltip} />}
+          slotProps={{
+            formControlLabel: {
+              sx: styles.toolFormControlLabel,
+              labelPlacement: 'start',
+            },
+            switch: { size: 'small' },
+          }}
+        />
+      ));
+    }
+
+    if (SEARCHABLE_KEYS.includes(hoveredItem)) {
+      const data = submenuMap[hoveredItem];
+      const config = submenuConfigs[hoveredItem];
+      return (
+        <PlusChatSubmenu
+          items={data.items}
+          searchValue={data.searchValue}
+          onSearchChange={data.onSearchChange}
+          onScroll={data.onScroll}
+          isLoading={data.isLoading}
+          {...config}
+        />
+      );
+    }
+  }, [
+    hoveredItem,
+    availableTools,
+    internal_tools,
+    disableInternalTools,
+    onInternalToolsConfigChange,
+    submenuMap,
+    submenuConfigs,
+    styles,
+  ]);
 
   return (
     <>
@@ -194,40 +379,17 @@ const PlusChatButton = forwardRef(props => {
         <Popper
           open
           anchorEl={hoveredAnchorEl}
-          placement="right-start"
+          placement="right-end"
           style={styles.subPopper}
         >
           <Paper
             ref={subMenuRef}
             elevation={8}
-            sx={hoveredItem === 'internalTools' ? styles.internalToolsPaper : styles.subPaper}
+            sx={styles[paperStyleKey]}
             onMouseEnter={handleSubMenuEnter}
             onMouseLeave={handleSubMenuLeave}
           >
-            {hoveredItem === 'internalTools' && availableTools.length > 0 ? (
-              availableTools.map(tool => (
-                <Switch.BaseSwitch
-                  key={tool.name}
-                  label={tool.title}
-                  checked={internal_tools.includes(tool.name)}
-                  disabled={disableInternalTools}
-                  onChange={(_, checkedValue) =>
-                    onInternalToolsConfigChange?.({ key: tool.name, value: checkedValue })
-                  }
-                  width="100%"
-                  infoTooltip={<Text.TextWithLink {...tool.infoTooltip} />}
-                  slotProps={{
-                    formControlLabel: {
-                      sx: styles.toolFormControlLabel,
-                      labelPlacement: 'start',
-                    },
-                    switch: { size: 'small' },
-                  }}
-                />
-              ))
-            ) : (
-              <Typography sx={styles.comingSoon}>Coming soon</Typography>
-            )}
+            {renderSubmenuContent()}
           </Paper>
         </Popper>
       )}
@@ -326,6 +488,26 @@ const plusChatButtonStyles = theme => ({
     backgroundColor: theme.palette.background.secondary,
     padding: '1rem',
     ml: '.25rem',
+  },
+  entitySubmenuPaper: {
+    width: '14.25rem',
+    borderRadius: '.5rem',
+    border: `.0625rem solid ${theme.palette.border.lines}`,
+    backgroundColor: theme.palette.background.secondary,
+    boxShadow: theme.palette.boxShadow.default,
+    padding: 0,
+    ml: '.25rem',
+    overflow: 'hidden',
+  },
+  toggleSubmenuPaper: {
+    width: '17rem',
+    borderRadius: '.5rem',
+    border: `.0625rem solid ${theme.palette.border.lines}`,
+    backgroundColor: theme.palette.background.secondary,
+    boxShadow: theme.palette.boxShadow.default,
+    padding: 0,
+    ml: '.25rem',
+    overflow: 'hidden',
   },
   internalToolsPaper: {
     minWidth: '12rem',

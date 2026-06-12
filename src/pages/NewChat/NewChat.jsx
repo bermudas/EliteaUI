@@ -685,6 +685,9 @@ const NewChat = props => {
     onEditToolkit,
     onEditPipeline,
     onEditArtifact,
+    onCreateAgent,
+    onCreatePipeline,
+    onCreateToolkit,
   } = useMutuallyExclusiveEditors({
     //AgentEditor
     onCloseAgentEditor: handleCloseAgentEditor,
@@ -933,6 +936,10 @@ const NewChat = props => {
       setActiveConversation,
       onInternalToolsConfigChange,
       onAddNewUsers,
+      onCreateAgent,
+      onCreatePipeline,
+      onCreateToolkit,
+      onDeleteParticipant,
     }),
     [
       onChangeParticipantSettings,
@@ -952,6 +959,10 @@ const NewChat = props => {
       onClearAttachments,
       onInternalToolsConfigChange,
       onAddNewUsers,
+      onCreateAgent,
+      onCreatePipeline,
+      onCreateToolkit,
+      onDeleteParticipant,
     ],
   );
 
@@ -1466,7 +1477,7 @@ const NewChat = props => {
                 onClosePipelineEditor={handleClosePipelineEditor}
                 isEditorDirty={editorIsDirty}
                 onShowVersionChangeAlert={handleShowVersionChangeAlert}
-                inputPlaceholder="Type your message. Use # to search and add AI assistants to conversation."
+                inputPlaceholder="Type your message..."
                 uploadAttachments={uploadAttachments}
                 isUploadingAttachments={isUploadingAttachments}
                 uploadProgress={uploadProgress}
