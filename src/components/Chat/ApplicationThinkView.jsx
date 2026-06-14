@@ -166,6 +166,24 @@ const ApplicationThinkView = memo(props => {
   // than being pulled to the top. Each sub-agent gets ONE accordion slot anchored
   // at its first action; later same-name actions (interleaved in a parallel turn)
   // append to that slot so the chips don't scatter.
+  // The sub-agent's kind (pipeline vs agent) for the accordion header icon. The
+  // participant `tools` list does not carry nested sub-agents (esp. for durable
+  // fan-out children), so resolveSubAgentIcon's tools lookup misses and falls
+  // back to the generic agent icon. Recover the kind from the sub-agent's OWN
+  // self-named invocation chip (its tool name === the sub-agent name), which
+  // carries agent_type/toolkit_type in toolMeta (#4993).
+  const deriveSubAgentType = useCallback((name, blockActions) => {
+    const self = blockActions.find(a => {
+      const an = (a?.name || '').trim();
+      return an === name || an === name.replace(/\s/g, '');
+    });
+    const at = self?.toolMeta?.agent_type || self?.agent_type;
+    if (at) return at === 'pipeline' ? 'pipeline' : 'application';
+    const tt = self?.toolMeta?.toolkit_type;
+    if (tt === 'pipeline' || tt === 'application') return tt;
+    return '';
+  }, []);
+
   const partitionIntoBlocks = useCallback(
     actionsList => {
       const blocks = [];
@@ -197,10 +215,15 @@ const ApplicationThinkView = memo(props => {
       return blocks.map(block =>
         block.kind === 'coord'
           ? { kind: 'coord', groups: groupActions(block.actions).groups }
-          : { kind: 'sub', name: block.name, groups: groupActions(block.actions).groups },
+          : {
+              kind: 'sub',
+              name: block.name,
+              agentType: deriveSubAgentType(block.name, block.actions),
+              groups: groupActions(block.actions).groups,
+            },
       );
     },
-    [deriveSubAgentName, groupActions],
+    [deriveSubAgentName, deriveSubAgentType, groupActions],
   );
 
   // Revealed (finished) actions for streaming view; all actions for history view.
@@ -219,7 +242,7 @@ const ApplicationThinkView = memo(props => {
   const streamingSubGroupsFull = useMemo(() => {
     const map = new Map();
     historyBlocks.forEach(block => {
-      if (block.kind === 'sub') map.set(block.name, block.groups);
+      if (block.kind === 'sub') map.set(block.name, { groups: block.groups, agentType: block.agentType });
     });
     return map;
   }, [historyBlocks]);
@@ -261,12 +284,21 @@ const ApplicationThinkView = memo(props => {
   );
 
   const thoughtDuration = useMemo(() => {
-    const startTime = originalActions[0]?.created_at || originalActions[0]?.timestamp;
-    const endTime =
-      originalActions[originalActions.length - 1]?.timestamp ||
-      originalActions[originalActions.length - 1]?.ended_at ||
-      originalActions[originalActions.length - 1]?.created_at;
-    return ChatHelpers.calculateDuration(startTime, endTime);
+    // Wall-clock span of the whole turn = earliest start → latest end across ALL
+    // actions, NOT the positional first/last. In a parallel fan-out the two
+    // children's actions interleave, so originalActions is not strictly
+    // chronological and [0]/[last] under-report the real elapsed time (#4993).
+    let minStart = Infinity;
+    let maxEnd = -Infinity;
+    originalActions.forEach(a => {
+      if (!a) return;
+      const start = new Date(a.created_at ?? a.timestamp ?? NaN).getTime();
+      if (!Number.isNaN(start)) minStart = Math.min(minStart, start);
+      const end = new Date(a.timestamp ?? a.ended_at ?? a.created_at ?? NaN).getTime();
+      if (!Number.isNaN(end)) maxEnd = Math.max(maxEnd, end);
+    });
+    if (minStart === Infinity || maxEnd === -Infinity) return ChatHelpers.calculateDuration();
+    return ChatHelpers.calculateDuration(minStart, maxEnd);
   }, [originalActions]);
 
   useEffect(() => {
@@ -467,7 +499,8 @@ const ApplicationThinkView = memo(props => {
           // Chips from the FULL per-sub-agent groups (not the throttled window)
           // so every executed tool shows while the child is still running, with
           // full tool names (matching history) rather than toolkit-only chips.
-          const groups = streamingSubGroupsFull.get(name) || [];
+          const subEntry = streamingSubGroupsFull.get(name);
+          const groups = subEntry?.groups || [];
           const inflight = subAgentInflight.get(name);
           const running = !!inflight || currentActionKey === name;
           return (
@@ -475,6 +508,7 @@ const ApplicationThinkView = memo(props => {
               key={`sa-${name}`}
               name={name}
               tools={tools}
+              agentType={subEntry?.agentType}
               running={running}
             >
               {groups.length > 0 && (
@@ -560,6 +594,7 @@ const ApplicationThinkView = memo(props => {
               key={`sa-${block.name}`}
               name={block.name}
               tools={tools}
+              agentType={block.agentType}
             >
               <Box sx={styles.badgesContainer}>
                 {block.groups.flatMap((group, i) => renderGroupChips(group, `${block.name}-${i}`, false))}
