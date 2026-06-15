@@ -7,6 +7,8 @@ import { Box, Typography } from '@mui/material';
 
 import { NewConversationHelpers } from '@/[fsd]/features/chat/lib/helpers';
 import { useNewStartConversationInputKeyDownHandler, useSlashMention } from '@/[fsd]/features/chat/lib/hooks';
+import { getChatParticipantUniqueId } from '@/[fsd]/features/chat/participants/lib/helpers';
+import { useFetchParticipantDetails } from '@/[fsd]/features/chat/participants/lib/hooks';
 import { SlashSuggestionList } from '@/[fsd]/features/chat/ui';
 import { CHAT_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
 import { DEFAULT_STEPS_LIMIT } from '@/[fsd]/shared/lib/constants/llmSettings.constants';
@@ -25,7 +27,6 @@ import {
 } from '@/common/constants';
 import { initializeNewMessages } from '@/common/initializeNewMessages';
 import { generateMessagePayload } from '@/common/messagePayloadUtils';
-import { getChatParticipantUniqueId } from '@/common/utils';
 import { ChatBodyContainer } from '@/components/Chat/StyledComponents';
 import { EllipsisTextWithTooltip } from '@/components/ConversationStarters';
 import useValidateApplicationVersion, {
@@ -33,7 +34,6 @@ import useValidateApplicationVersion, {
 } from '@/hooks/application/useValidateApplicationVersion';
 import useValidateToolkit, { useToolkitValidationInfo } from '@/hooks/application/useValidateToolkit';
 import useChatStreaming from '@/hooks/chat/useChatStreaming';
-import useFetchParticipantDetails from '@/hooks/chat/useFetchParticipantDetails';
 import useLocalActiveParticipant from '@/hooks/chat/useLocalActiveParticipant';
 import useNewConversationAttachments from '@/hooks/chat/useNewConversationAttachments';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
@@ -60,6 +60,10 @@ const NewConversationView = forwardRef(
       onShowAgentEditor,
       onShowPipelineEditor,
       onCloseAgentEditor,
+      onCreateAgent,
+      onCreatePipeline,
+      onCreateToolkit,
+      onAddNewUsers,
       hidden = false,
       uploadAttachments,
       isUploadingAttachments,
@@ -441,6 +445,23 @@ const NewConversationView = forwardRef(
         stopProcessingSymbols();
       }
 
+      if (participant.participantType === ChatParticipantType.Users) {
+        const userParticipant = {
+          ...participant,
+          entity_name: ChatParticipantType.Users,
+          entity_meta: { id: participant.id, name: participant.name },
+          entity_settings: {},
+          meta: { user_name: participant.name, user_avatar: participant.avatar, email: participant.email },
+        };
+        setSelectedParticipants(prev => {
+          if (prev.find(p => p.entity_name === ChatParticipantType.Users && p.entity_meta.id === participant.id)) {
+            return prev;
+          }
+          return [...prev, userParticipant];
+        });
+        return;
+      }
+
       const details =
         participant.version_details || participant.participantType === ChatParticipantType.Toolkits
           ? participant
@@ -452,23 +473,26 @@ const NewConversationView = forwardRef(
       }, 0);
     };
 
+    const onDeleteParticipant = useCallback(participantToDelete => {
+      if (
+        selectedParticipant?.entity_name === participantToDelete.entity_name &&
+        selectedParticipant?.entity_meta.id === participantToDelete.entity_meta.id
+      ) {
+        onClearSelectedParticipant();
+      }
+      setSelectedParticipants(prev =>
+        prev.filter(
+          p =>
+            p.entity_name !== participantToDelete.entity_name ||
+            p.entity_meta.id !== participantToDelete.entity_meta.id,
+        ),
+      );
+    }, [selectedParticipant, onClearSelectedParticipant]);
+
     useImperativeHandle(ref, () => ({
       onSelectParticipant,
-      onDeleteParticipant: participantToDelete => {
-        if (
-          selectedParticipant?.entity_name === participantToDelete.entity_name &&
-          selectedParticipant?.entity_meta.id === participantToDelete.entity_meta.id
-        ) {
-          onClearSelectedParticipant();
-        }
-        setSelectedParticipants(prev =>
-          prev.filter(
-            p =>
-              p.entity_name !== participantToDelete.entity_name ||
-              p.entity_meta.id !== participantToDelete.entity_meta.id,
-          ),
-        );
-      },
+      onDeleteParticipant,
+      mentionUser: (...args) => chatInput.current?.mentionUser?.(...args),
     }));
 
     const conversationStarters = useMemo(() => {
@@ -824,7 +848,8 @@ const NewConversationView = forwardRef(
           )}
           <Box sx={styles.inputContainer}>
             <NewChatInput
-              placeholder="Type your message. Use # to search and add AI assistants to conversation."
+              fromTheChat
+              placeholder="Type your message..."
               ref={chatInput}
               onSend={onSend}
               isLoading={isSending || isFetchingParticipant || isUploadingAttachments}
@@ -868,6 +893,13 @@ const NewConversationView = forwardRef(
               onInternalToolsConfigChange={onInternalToolsConfigChange}
               internal_tools={internalTools}
               slashHighlights={slashHighlightRanges}
+              onSelectParticipant={onSelectParticipant}
+              onCreateAgent={onCreateAgent}
+              onCreatePipeline={onCreatePipeline}
+              onCreateToolkit={onCreateToolkit}
+              onDeleteParticipant={onDeleteParticipant}
+              participants={selectedParticipants}
+              onAddNewUsers={onAddNewUsers}
             />
           </Box>
           <Box sx={styles.recommendationsContainer}>

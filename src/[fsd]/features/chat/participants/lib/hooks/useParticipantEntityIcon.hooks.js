@@ -7,12 +7,13 @@ import { ChatParticipantType } from '@/common/constants';
 import { EntityTypeIcon } from '@/components/EntityIcon';
 import { useTheme } from '@emotion/react';
 
-export default function useParticipantEntityIcon(participant) {
+export const useParticipantEntityIcon = participant => {
   const theme = useTheme();
   const systemSenderName = useSystemSenderName();
   const { toolkitSchemas } = useGetCurrentToolkitSchemas();
+
   const entityIcon = useMemo(() => {
-    if (!participant?.entity_name) {
+    if (!participant?.entity_name)
       return {
         component: createElement(EntityTypeIcon, {
           type: ChatParticipantType.Dummy,
@@ -20,31 +21,31 @@ export default function useParticipantEntityIcon(participant) {
           systemSenderName,
         }),
       };
-    }
+
     if (
       participant?.entity_name !== ChatParticipantType.Toolkits &&
       participant?.participantType !== ChatParticipantType.Toolkits
-    ) {
+    )
       return (
         participant?.entity_settings?.icon_meta ||
         participant?.icon_meta ||
         participant?.version_details?.icon_meta
       );
-    } else {
-      const { iconComponent } = ToolkitsHelpers.getToolkitIcon(
-        {
-          type: participant?.entity_settings?.toolkit_type || participant?.type || '',
-        },
-        theme,
-        toolkitSchemas,
-        participant.meta?.mcp,
-      );
-      return {
-        ...(participant?.entity_settings?.icon_meta || {}),
-        component: iconComponent,
-      };
-    }
+
+    const { iconComponent } = ToolkitsHelpers.getToolkitIcon(
+      {
+        type: participant?.entity_settings?.toolkit_type || participant?.type || '',
+      },
+      theme,
+      toolkitSchemas,
+      participant.meta?.mcp,
+    );
+
+    return {
+      ...(participant?.entity_settings?.icon_meta || {}),
+      component: iconComponent,
+    };
   }, [participant, systemSenderName, theme, toolkitSchemas]);
 
   return entityIcon;
-}
+};

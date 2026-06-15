@@ -5,36 +5,23 @@ import {
   useLazyGetApplicationVersionDetailQuery,
   useLazyPublicApplicationDetailsQuery,
 } from '@/api/applications';
-import { useLazyDatasourceDetailsQuery, useLazyPublicDatasourceDetailsQuery } from '@/api/datasources';
 import { useLazyToolkitsDetailsQuery } from '@/api/toolkits';
 import { ChatParticipantType, PUBLIC_PROJECT_ID } from '@/common/constants';
 
-const useFetchParticipantDetails = () => {
+export const useFetchParticipantDetails = () => {
   const [getApplicationDetail, { isFetching: isFetchingApplication }] = useLazyApplicationDetailsQuery();
   const [getPublicApplicationDetail, { isFetching: isFetchingPublicApplication }] =
     useLazyPublicApplicationDetailsQuery();
   const [getApplicationVersion, { isFetching: isFetchingApplicationVersion }] =
     useLazyGetApplicationVersionDetailQuery();
-  const [getDatasourceDetail, { isFetching: isFetchingDatasource }] = useLazyDatasourceDetailsQuery();
-  const [getPublicDatasourceDetail, { isFetching: isFetchingPublicDatasource }] =
-    useLazyPublicDatasourceDetailsQuery();
   const [getToolkitDetail, { isFetching: isFetchingToolkit }] = useLazyToolkitsDetailsQuery();
   const isFetchingParticipant = useMemo(
     () =>
       isFetchingApplication ||
-      isFetchingDatasource ||
       isFetchingPublicApplication ||
-      isFetchingPublicDatasource ||
       isFetchingApplicationVersion ||
       isFetchingToolkit,
-    [
-      isFetchingApplication,
-      isFetchingApplicationVersion,
-      isFetchingDatasource,
-      isFetchingPublicApplication,
-      isFetchingPublicDatasource,
-      isFetchingToolkit,
-    ],
+    [isFetchingApplication, isFetchingApplicationVersion, isFetchingPublicApplication, isFetchingToolkit],
   );
 
   const fetchOriginalDetails = useCallback(
@@ -48,11 +35,6 @@ const useFetchParticipantDetails = () => {
           const result = await request({ projectId, applicationId: id }, queryOptions);
           return result?.data || {};
         }
-        case ChatParticipantType.Datasources: {
-          const request = projectId != PUBLIC_PROJECT_ID ? getDatasourceDetail : getPublicDatasourceDetail;
-          const result = await request({ projectId, datasourceId: id }, queryOptions);
-          return result?.data || {};
-        }
         case ChatParticipantType.Toolkits: {
           const result = await getToolkitDetail({ projectId, toolkitId: id }, queryOptions);
           return result?.data || {};
@@ -62,13 +44,7 @@ const useFetchParticipantDetails = () => {
       }
       return {};
     },
-    [
-      getApplicationDetail,
-      getDatasourceDetail,
-      getPublicApplicationDetail,
-      getPublicDatasourceDetail,
-      getToolkitDetail,
-    ],
+    [getApplicationDetail, getPublicApplicationDetail, getToolkitDetail],
   );
 
   const fetchOriginalVersionDetails = useCallback(
@@ -101,5 +77,3 @@ const useFetchParticipantDetails = () => {
     isFetchingParticipant,
   };
 };
-
-export default useFetchParticipantDetails;
