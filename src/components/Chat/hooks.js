@@ -89,12 +89,22 @@ export const useStopStreaming = ({
       setTimeout(
         () =>
           setChatHistory?.(prevState =>
-            prevState.map(msg => ({
-              ...msg,
-              isStreaming: msg.id === streamId ? false : msg.isStreaming,
-              isLoading: msg.id === streamId ? false : msg.isLoading,
-              task_id: undefined,
-            })),
+            prevState.map(msg =>
+              msg.id === streamId
+                ? {
+                    ...msg,
+                    isStreaming: false,
+                    isLoading: false,
+                    task_id: undefined,
+                    // Stop freezes the run: drop any pending HITL approval cards
+                    // (#4993 Track 2). They are client-side only, so the backend
+                    // sync can't clear them — and a click on a stale card would
+                    // re-invoke the parent and re-fan-out every child.
+                    hitlInterrupts: undefined,
+                    hitlInterrupt: undefined,
+                  }
+                : { ...msg, task_id: undefined },
+            ),
           ),
         200,
       );
@@ -123,7 +133,15 @@ export const useStopStreaming = ({
     setTimeout(
       () =>
         setChatHistory?.(prevState =>
-          prevState.map(msg => ({ ...msg, isStreaming: false, isLoading: false, task_id: undefined })),
+          prevState.map(msg => ({
+            ...msg,
+            isStreaming: false,
+            isLoading: false,
+            task_id: undefined,
+            // Stop freezes the run — drop pending HITL cards (#4993 Track 2).
+            hitlInterrupts: undefined,
+            hitlInterrupt: undefined,
+          })),
         ),
       200,
     );
