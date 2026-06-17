@@ -102,7 +102,7 @@ const ProjectContextContent = memo(() => {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => {
-        const text = ev.target.result;
+        const text = ev.target.result.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         if (text.length > MAX_CHARS) {
           toastError(`File content exceeds ${MAX_CHARS} characters`);
           return;
@@ -198,29 +198,32 @@ const ProjectContextContent = memo(() => {
                   Include goals, terminology, workflows, or constraints relevant to the project.
                 </Typography>
               </Box>
-              {showEditorControls && (
-                <Box sx={styles.toolbar}>
-                  <Button.BaseBtn
-                    variant={BUTTON_VARIANTS.secondary}
-                    startIcon={<ImportIcon />}
-                    onClick={handleImportClick}
-                    title="Import markdown file"
-                  />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".md,text/markdown"
-                    style={{ display: 'none' }}
-                    onChange={handleFileUpload}
-                  />
-                  <TabGroupButton
-                    value={mode}
-                    onChange={handleModeChange}
-                    size="small"
-                    arrayBtn={modeButtons}
-                  />
-                </Box>
-              )}
+              <Box sx={styles.toolbar}>
+                {showEditorControls && (
+                  <>
+                    <Button.BaseBtn
+                      variant={BUTTON_VARIANTS.secondary}
+                      startIcon={<ImportIcon />}
+                      onClick={handleImportClick}
+                      title="Import markdown file"
+                    />
+                    <Box
+                      hidden
+                      component="input"
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".md,text/markdown"
+                      onChange={handleFileUpload}
+                    />
+                  </>
+                )}
+                <TabGroupButton
+                  value={mode}
+                  onChange={handleModeChange}
+                  size="small"
+                  arrayBtn={modeButtons}
+                />
+              </Box>
             </Box>
 
             {mode === 'edit' ? (
