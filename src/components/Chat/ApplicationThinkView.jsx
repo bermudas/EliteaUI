@@ -11,6 +11,99 @@ import { TOOL_ACTION_NAMES, TOOL_ACTION_TYPES, ToolActionStatus } from '@/common
 
 import ActionView from './ActionView';
 
+// Streaming view of the thinking block: ordered coordinator chip blocks and
+// per-sub-agent accordions, plus any sub-agent whose activity the throttled
+// reveal hasn't surfaced yet, plus the orchestrator's own in-flight box at the
+// bottom. Extracted as a memoized component (rather than an inline IIFE) so it
+// only re-renders when its inputs actually change.
+const StreamingThinkBlocks = memo(props => {
+  const {
+    blocks,
+    streamingSubGroupsFull,
+    subAgentInflight,
+    currentActionKey,
+    currentActionBox,
+    tools,
+    renderGroupChips,
+    badgesContainerSx,
+  } = props;
+
+  // Sub-agents already represented by a revealed block render their in-flight
+  // box inline. Any sub-agent that ONLY has an in-flight box (no revealed
+  // chips yet, so absent from blocks) is the newest activity → append after
+  // the ordered blocks. The orchestrator's own in-flight box sits at the very
+  // bottom (its natural chronological turn — bottom of the thinking block).
+  const renderedSubNames = new Set(blocks.filter(b => b.kind === 'sub').map(b => b.name));
+  const extraSub = [];
+  const addExtra = name => {
+    if (name && !renderedSubNames.has(name) && !extraSub.includes(name)) {
+      extraSub.push(name);
+    }
+  };
+  // Any sub-agent with arrived actions that the throttled reveal hasn't
+  // surfaced yet still gets an accordion (its chips come from the full
+  // groups below), so a running child is never missing from the view.
+  streamingSubGroupsFull.forEach((_, key) => addExtra(key));
+  subAgentInflight.forEach((_, key) => addExtra(key));
+  if (currentActionKey) addExtra(currentActionKey);
+
+  const renderSub = name => {
+    // Chips from the FULL per-sub-agent groups (not the throttled window)
+    // so every executed tool shows while the child is still running, with
+    // full tool names (matching history) rather than toolkit-only chips.
+    const subEntry = streamingSubGroupsFull.get(name);
+    const groups = subEntry?.groups || [];
+    const inflight = subAgentInflight.get(name);
+    const running = !!inflight || currentActionKey === name;
+    return (
+      <SubAgentAccordion
+        key={`sa-${name}`}
+        name={name}
+        tools={tools}
+        agentType={subEntry?.agentType}
+        running={running}
+      >
+        {groups.length > 0 && (
+          <Box sx={badgesContainerSx}>
+            {groups.flatMap((group, i) => renderGroupChips(group, `${name}-${i}`, true, inflight, true))}
+          </Box>
+        )}
+        {inflight ? (
+          <ActionView
+            showProgress
+            action={inflight}
+            tools={tools}
+            isStreaming
+          />
+        ) : (
+          currentActionKey === name && currentActionBox
+        )}
+      </SubAgentAccordion>
+    );
+  };
+
+  return (
+    <>
+      {blocks.map((block, bi) =>
+        block.kind === 'coord'
+          ? block.groups.length > 0 && (
+              <Box
+                key={`coord-${bi}`}
+                sx={badgesContainerSx}
+              >
+                {block.groups.flatMap((group, i) => renderGroupChips(group, `coord-${bi}-${i}`, true))}
+              </Box>
+            )
+          : renderSub(block.name),
+      )}
+      {extraSub.map(name => renderSub(name))}
+      {currentActionKey === '' && currentActionBox}
+    </>
+  );
+});
+
+StreamingThinkBlocks.displayName = 'StreamingThinkBlocks';
+
 const ApplicationThinkView = memo(props => {
   const { defaultExpanded = false, actions, originalActions, isStreaming = false, tools } = props;
 
@@ -474,83 +567,16 @@ const ApplicationThinkView = memo(props => {
       {/* SwarmChild actions are NOT rendered here during streaming.
           They will be rendered as separate accordions in ApplicationAnswer
           after streaming completes (!isProcessing). */}
-      {(() => {
-        const blocks = streamingBlocks;
-        // Sub-agents already represented by a revealed block render their in-flight
-        // box inline. Any sub-agent that ONLY has an in-flight box (no revealed
-        // chips yet, so absent from blocks) is the newest activity → append after
-        // the ordered blocks. The orchestrator's own in-flight box sits at the very
-        // bottom (its natural chronological turn — bottom of the thinking block).
-        const renderedSubNames = new Set(blocks.filter(b => b.kind === 'sub').map(b => b.name));
-        const extraSub = [];
-        const addExtra = name => {
-          if (name && !renderedSubNames.has(name) && !extraSub.includes(name)) {
-            extraSub.push(name);
-          }
-        };
-        // Any sub-agent with arrived actions that the throttled reveal hasn't
-        // surfaced yet still gets an accordion (its chips come from the full
-        // groups below), so a running child is never missing from the view.
-        streamingSubGroupsFull.forEach((_, key) => addExtra(key));
-        subAgentInflight.forEach((_, key) => addExtra(key));
-        if (currentActionKey) addExtra(currentActionKey);
-
-        const renderSub = name => {
-          // Chips from the FULL per-sub-agent groups (not the throttled window)
-          // so every executed tool shows while the child is still running, with
-          // full tool names (matching history) rather than toolkit-only chips.
-          const subEntry = streamingSubGroupsFull.get(name);
-          const groups = subEntry?.groups || [];
-          const inflight = subAgentInflight.get(name);
-          const running = !!inflight || currentActionKey === name;
-          return (
-            <SubAgentAccordion
-              key={`sa-${name}`}
-              name={name}
-              tools={tools}
-              agentType={subEntry?.agentType}
-              running={running}
-            >
-              {groups.length > 0 && (
-                <Box sx={styles.badgesContainer}>
-                  {groups.flatMap((group, i) =>
-                    renderGroupChips(group, `${name}-${i}`, true, inflight, true),
-                  )}
-                </Box>
-              )}
-              {inflight ? (
-                <ActionView
-                  showProgress
-                  action={inflight}
-                  tools={tools}
-                  isStreaming
-                />
-              ) : (
-                currentActionKey === name && currentActionBox
-              )}
-            </SubAgentAccordion>
-          );
-        };
-
-        return (
-          <>
-            {blocks.map((block, bi) =>
-              block.kind === 'coord'
-                ? block.groups.length > 0 && (
-                    <Box
-                      key={`coord-${bi}`}
-                      sx={styles.badgesContainer}
-                    >
-                      {block.groups.flatMap((group, i) => renderGroupChips(group, `coord-${bi}-${i}`, true))}
-                    </Box>
-                  )
-                : renderSub(block.name),
-            )}
-            {extraSub.map(name => renderSub(name))}
-            {currentActionKey === '' && currentActionBox}
-          </>
-        );
-      })()}
+      <StreamingThinkBlocks
+        blocks={streamingBlocks}
+        streamingSubGroupsFull={streamingSubGroupsFull}
+        subAgentInflight={subAgentInflight}
+        currentActionKey={currentActionKey}
+        currentActionBox={currentActionBox}
+        tools={tools}
+        renderGroupChips={renderGroupChips}
+        badgesContainerSx={styles.badgesContainer}
+      />
     </Box>
   ) : (
     <StyledAccordion
