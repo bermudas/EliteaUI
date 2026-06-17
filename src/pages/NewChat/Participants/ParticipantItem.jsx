@@ -61,6 +61,12 @@ const ParticipantItem = memo(props => {
 
   // Check if this participant is currently being edited
   const agentType = participant.entity_settings?.agent_type;
+  // A pipeline participant may carry its kind on either entity_settings.agent_type
+  // OR the top-level agent_type (the section grouping in Participants.jsx accepts
+  // both). The icon's entityType previously only read entity_settings.agent_type,
+  // so a pipeline grouped via the top-level field rendered the generic agent grid
+  // icon instead of the flow icon (#4993).
+  const isPipelineParticipant = agentType === 'pipeline' || participant.agent_type === 'pipeline';
   const isBeingEdited = useMemo(() => {
     // Handle toolkit editing
     if (
@@ -460,7 +466,7 @@ const ParticipantItem = memo(props => {
         <EntityIcon
           icon={entityIcon}
           entityType={
-            participant.entity_settings?.agent_type === 'pipeline'
+            isPipelineParticipant
               ? 'pipeline'
               : participant.entity_name !== ChatParticipantType.Toolkits
                 ? participant.entity_name
@@ -586,9 +592,7 @@ const ParticipantItem = memo(props => {
         <Box sx={styles.attentionHeader}>
           <EntityIcon
             icon={entityIcon}
-            entityType={
-              participant.entity_settings?.agent_type === 'pipeline' ? 'pipeline' : participant.entity_name
-            }
+            entityType={isPipelineParticipant ? 'pipeline' : participant.entity_name}
             editable={false}
             sx={{ width: '1.5rem', height: '1.5rem', minWidth: '1.5rem' }}
             imageStyle={{ width: '1.5rem', height: '1.5rem' }}

@@ -27,16 +27,19 @@ export const resolveSubAgentIcon = (name, tools, theme, agentType) => {
   const tool = tools?.find(
     t => t?.name === name || t?.toolkit_name === name || t?.meta?.name?.replace('/', '') === name,
   );
-  let type = tool?.type || tool?.entity_settings?.toolkit_type || '';
-  if (tool?.agent_type) {
-    type = tool.agent_type === 'pipeline' ? 'pipeline' : 'application';
-  }
-  // Fallback for sub-agents absent from the participant `tools` list (durable
-  // fan-out children): the caller derives the kind from the sub-agent's own
-  // invocation chip and passes it as agentType so the header still shows the
-  // correct pipeline/application icon instead of the generic agent grid (#4993).
-  if (!type && agentType) {
+  // The explicit agentType prop is derived from the sub-agent's OWN invocation
+  // (the action's toolMeta.agent_type — the same authoritative source the
+  // invocation chip uses), so it wins the pipeline/application distinction. The
+  // participant `tools` entry for a pipeline often carries the generic entity
+  // type ('application') without agent_type, which otherwise mis-resolved a
+  // pipeline sub-agent to the grid icon instead of the flow icon (issue #4993).
+  let type = '';
+  if (agentType) {
     type = agentType === 'pipeline' ? 'pipeline' : 'application';
+  } else if (tool?.agent_type) {
+    type = tool.agent_type === 'pipeline' ? 'pipeline' : 'application';
+  } else {
+    type = tool?.type || tool?.entity_settings?.toolkit_type || '';
   }
   const iconMeta = tool?.icon_meta || tool?.meta?.icon_meta;
   if (iconMeta?.url && (type === 'application' || type === 'pipeline')) {

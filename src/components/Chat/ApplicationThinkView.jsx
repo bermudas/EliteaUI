@@ -8,6 +8,7 @@ import { AccordionConstants } from '@/[fsd]/shared/lib/constants';
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '@/[fsd]/shared/ui/accordion';
 import ArrowRightIcon from '@/assets/arrow-right-icon.svg?react';
 import { TOOL_ACTION_NAMES, TOOL_ACTION_TYPES, ToolActionStatus } from '@/common/constants';
+import { getToolInfoFromAction } from '@/common/toolActionUitls';
 
 import ActionView from './ActionView';
 
@@ -265,17 +266,27 @@ const ApplicationThinkView = memo(props => {
   // back to the generic agent icon. Recover the kind from the sub-agent's OWN
   // self-named invocation chip (its tool name === the sub-agent name), which
   // carries agent_type/toolkit_type in toolMeta (#4993).
-  const deriveSubAgentType = useCallback((name, blockActions) => {
-    const self = blockActions.find(a => {
-      const an = (a?.name || '').trim();
-      return an === name || an === name.replace(/\s/g, '');
-    });
-    const at = self?.toolMeta?.agent_type || self?.agent_type;
-    if (at) return at === 'pipeline' ? 'pipeline' : 'application';
-    const tt = self?.toolMeta?.toolkit_type;
-    if (tt === 'pipeline' || tt === 'application') return tt;
-    return '';
-  }, []);
+  const deriveSubAgentType = useCallback(
+    (name, blockActions) => {
+      const self = blockActions.find(a => {
+        const an = (a?.name || '').trim();
+        return an === name || an === name.replace(/\s/g, '');
+      });
+      if (!self) return '';
+      // Resolve through the SAME authoritative path the self-invocation chip
+      // uses (getToolInfoFromAction → resolveToolkitType), so the accordion
+      // header icon always matches the chip inside it. The previous inline
+      // checks only looked at toolMeta.agent_type/toolkit_type — a strict
+      // subset of resolveToolkitType's fallback chain — so a pipeline that
+      // resolved via a later fallback (e.g. entity_settings.toolkit_type)
+      // returned '' here and the header fell back to the grid icon while the
+      // chip correctly showed the flow icon (#4993).
+      const resolvedType = getToolInfoFromAction(self, tools)?.toolkitType;
+      if (resolvedType === 'pipeline' || resolvedType === 'application') return resolvedType;
+      return '';
+    },
+    [tools],
+  );
 
   const partitionIntoBlocks = useCallback(
     actionsList => {
