@@ -83,9 +83,12 @@ export const useMultiSectionConfigurations = (sections = [], projectId) => {
 
     const seen = new Set();
     const makeKey = item =>
-      [item.id || 'no-id', item.type || 'no-type', item.section || 'no-section', item.project_id || 'no-project'].join(
-        '|',
-      );
+      [
+        item.id || 'no-id',
+        item.type || 'no-type',
+        item.section || 'no-section',
+        item.project_id || 'no-project',
+      ].join('|');
 
     return [...locals, ...shareds].filter(item => {
       const key = makeKey(item);
