@@ -1,20 +1,35 @@
 import { memo, useCallback, useMemo } from 'react';
 
+import DOMPurify from 'dompurify';
 import { MuiMarkdown, getOverrides } from 'mui-markdown';
 
 import { Box } from '@mui/material';
 
-import {
-  MarkdownMapping,
-  extractFirstHTMLTag,
-  isValidHTMLTag,
-  removeHTMLTags,
-} from '@/[fsd]/shared/lib/utils';
+import { MarkdownMapping, removeHTMLTags } from '@/[fsd]/shared/lib/utils';
 import CodeBlock from '@/components/CodeBlock';
 import MarkdownTableBlock from '@/components/MarkdownTableBlock';
 import { useTheme } from '@emotion/react';
 
 import DefaultMarkdown from './DefaultMarkdown';
+
+// Tags that can execute code, inject styles, or load external resources.
+// svg/math are included because both namespaces have their own XSS vectors
+// (e.g. <svg onload=...>, <math> namespace confusion attacks).
+// DOMPurify's default config already strips all on* event attributes and
+// javascript:/data: URLs — no FORBID_ATTR needed.
+const FORBIDDEN_HTML_TAGS = [
+  'script',
+  'style',
+  'iframe',
+  'object',
+  'embed',
+  'link',
+  'meta',
+  'base',
+  'noscript',
+  'svg',
+  'math',
+];
 
 const Token = memo(props => {
   const {
@@ -219,24 +234,16 @@ const Token = memo(props => {
       }
       return fallback;
     case 'html': {
-      try {
-        const isValidHtml = isValidHTMLTag(extractFirstHTMLTag(markedToken.raw)?.slice(1, -1));
-        return (
-          <MuiMarkdown
-            options={{ disableParsingRawHTML: !isValidHtml, overrides: overrides(markedToken.raw) }}
-          >
-            {markedToken.raw}
-          </MuiMarkdown>
-        );
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('render html markdown error: ', error);
-        return (
-          <MuiMarkdown options={{ disableParsingRawHTML: true, overrides: overrides(markedToken.raw) }}>
-            {markedToken.raw}
-          </MuiMarkdown>
-        );
-      }
+      // DOMPurify default config already strips all on* event attributes and javascript:/data: URLs.
+      // FORBID_TAGS adds explicit belt-and-suspenders for tags that could inject executable content.
+      const clean = DOMPurify.sanitize(markedToken.raw, {
+        FORBID_TAGS: FORBIDDEN_HTML_TAGS,
+      });
+      return (
+        <MuiMarkdown options={{ disableParsingRawHTML: false, overrides: overrides(clean) }}>
+          {clean}
+        </MuiMarkdown>
+      );
     }
     case 'paragraph': {
       try {
