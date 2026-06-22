@@ -2,9 +2,9 @@ import { memo } from 'react';
 
 import { Box } from '@mui/material';
 
+import { ModalConstants } from '@/[fsd]/shared/lib/constants';
 import { Button, Modal } from '@/[fsd]/shared/ui';
 import { BUTTON_VARIANTS } from '@/[fsd]/shared/ui/button/BaseBtn';
-import { ModalConstants } from '@/[fsd]/shared/lib/constants';
 
 import DuplicateDialogContent from './DuplicateDialogContent';
 

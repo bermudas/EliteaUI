@@ -62,6 +62,7 @@ export const DEFAULT_PAGE_TOP_K = 1;
 export const TAG_NAME_MAX_LENGTH = 48;
 export const MAX_NAME_LENGTH = 32;
 export const MAX_DESCRIPTION_LENGTH = 2304;
+export const MAX_INSTRUCTIONS_LENGTH = 2500;
 export const MAX_VARIABLES_LENGTH = 768;
 export const MAX_STEP_LIMIT = 999;
 export const MIN_STEP_LIMIT = 0;
@@ -463,6 +464,7 @@ export const ContentType = {
   MCPAdmin: 'MCPAdmin',
   MCPAll: 'MCPAll',
   CredentialAll: 'CredentialAll',
+  SkillAll: 'SkillAll',
 };
 
 export const PERSONAL_SPACE_PERIOD_FOR_NEW_USER = 5 * 60 * 1000;
@@ -476,6 +478,7 @@ export const RETENTION_MEASURES = ['days', 'weeks', 'months', 'years'];
 
 export const publicTabs = ['latest', 'my-liked', 'trending'];
 export const ApplicationsTabs = ['latest', 'my-liked', 'trending', 'admin'];
+export const SkillsTabs = ['all'];
 export const ToolkitsTabs = ['all', 'my-liked', 'trending', 'admin'];
 export const AppsTabs = ['applications', 'catalog'];
 
