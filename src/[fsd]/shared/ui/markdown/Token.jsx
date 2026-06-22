@@ -5,31 +5,13 @@ import { MuiMarkdown, getOverrides } from 'mui-markdown';
 
 import { Box } from '@mui/material';
 
+import { MarkdownConstants } from '@/[fsd]/shared/lib/constants';
 import { MarkdownMapping, removeHTMLTags } from '@/[fsd]/shared/lib/utils';
 import CodeBlock from '@/components/CodeBlock';
 import MarkdownTableBlock from '@/components/MarkdownTableBlock';
 import { useTheme } from '@emotion/react';
 
 import DefaultMarkdown from './DefaultMarkdown';
-
-// Tags that can execute code, inject styles, or load external resources.
-// svg/math are included because both namespaces have their own XSS vectors
-// (e.g. <svg onload=...>, <math> namespace confusion attacks).
-// DOMPurify's default config already strips all on* event attributes and
-// javascript:/data: URLs — no FORBID_ATTR needed.
-const FORBIDDEN_HTML_TAGS = [
-  'script',
-  'style',
-  'iframe',
-  'object',
-  'embed',
-  'link',
-  'meta',
-  'base',
-  'noscript',
-  'svg',
-  'math',
-];
 
 const Token = memo(props => {
   const {
@@ -237,7 +219,7 @@ const Token = memo(props => {
       // DOMPurify default config already strips all on* event attributes and javascript:/data: URLs.
       // FORBID_TAGS adds explicit belt-and-suspenders for tags that could inject executable content.
       const clean = DOMPurify.sanitize(markedToken.raw, {
-        FORBID_TAGS: FORBIDDEN_HTML_TAGS,
+        FORBID_TAGS: MarkdownConstants.FORBIDDEN_HTML_TAGS,
       });
       return (
         <MuiMarkdown options={{ disableParsingRawHTML: false, overrides: overrides(clean) }}>
