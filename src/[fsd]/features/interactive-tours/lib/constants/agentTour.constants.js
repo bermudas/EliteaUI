@@ -98,8 +98,8 @@ You can also **Export** any saved version as a \`.zip\` or \`.md\` file to back 
     skip: true, // For targeting need to open menu
     target: AGENT_TOUR_TARGETS.publish,
     placement: 'bottom',
-    title: 'Publishing to Agents Studio',
-    content: `Publish an agent to **Agents Studio** — a shared community library accessible to all users across projects. Published agents appear as read-only cards in Studio. Other users can start conversations with them, like them, and add them to their own chats.
+    title: 'Publishing to Agents HUB',
+    content: `Publish an agent to **Agents HUB** — a shared community library accessible to all users across projects. Published agents appear as read-only cards in HUB. Other users can start conversations with them, like them, and add them to their own chats.
 
 Once submitted, a published version goes through a moderation review. You will receive a notification when it is approved or rejected.`,
   },

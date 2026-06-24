@@ -18,7 +18,7 @@ export const OptionsMap = {
 };
 
 export const RouteToLabelMap = [
-  { route: RouteDefinitions.AgentStudio, label: null },
+  { route: RouteDefinitions.AgentHub, label: null },
   { route: RouteDefinitions.CreateConfiguration, label: 'Configuration' },
   { route: 'settings/model-configuration', label: 'Configuration' },
   { route: RouteDefinitions.CreatePersonalToken, label: 'Token' },
@@ -59,7 +59,7 @@ export const SimpleCreateRoutes = [
   'settings/environment',
   RouteDefinitions.Onboarding,
   RouteDefinitions.UserSettings,
-  RouteDefinitions.AgentStudio,
+  RouteDefinitions.AgentHub,
   RouteDefinitions.HelpCenter,
   RouteDefinitions.NotificationCenter,
 ];

@@ -39,7 +39,7 @@ The panel does not mark notifications as read when opened — notifications are 
 
 Notifications are generated automatically by platform events. Current notification types include:
 
-- **Agent unpublished** — a published agent version was removed from Agents Studio
+- **Agent unpublished** — a published agent version was removed from Agents HUB
 - **User added to conversation** — you were added to a shared conversation
 - **Project created** — a new project was successfully created
 - **Index data changed (success)** — a toolkit index was created or reindexed successfully

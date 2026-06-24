@@ -11,10 +11,10 @@ export const agentStudioTourSteps = [
     id: 'what-is-agents-studio',
     target: AGENT_STUDIO_TOUR_TARGETS.workspace,
     placement: 'center',
-    title: 'What is ELITEA Agents Studio?',
-    content: `Agents Studio is a shared library of community-published agents. Unlike the Agents menu — where you create and manage your own agents — Studio gives you read-only access to agents published by other users across all projects.
+    title: 'What is ELITEA Agents HUB?',
+    content: `Agents HUB is a shared library of community-published agents. Unlike the Agents menu — where you create and manage your own agents — HUB gives you read-only access to agents published by other users across all projects.
 
-Each agent in Studio is a fully configured AI assistant built for a specific purpose. You can browse, preview, and start conversations with any published agent without building one from scratch.`,
+Each agent in HUB is a fully configured AI assistant built for a specific purpose. You can browse, preview, and start conversations with any published agent without building one from scratch.`,
   },
   {
     id: 'search-and-category-filters',
@@ -49,7 +49,7 @@ Each agent in Studio is a fully configured AI assistant built for a specific pur
     title: 'Starting a Conversation',
     content: `From the agent detail view, click **Start Conversation** or click any conversation starter. ELITEA opens a new Chat conversation with the agent already added as a participant and its conversation starters ready to use.
 
-Published agents can also be added directly from Chat without visiting Agents Studio. Use the \`#\` mention or the **+** button in the Participants panel to search for and add any published agent to an ongoing conversation.`,
+Published agents can also be added directly from Chat without visiting Agents HUB. Use the \`#\` mention or the **+** button in the Participants panel to search for and add any published agent to an ongoing conversation.`,
   },
   {
     id: 'what-you-can-modify-in-a-conversation',

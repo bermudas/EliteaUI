@@ -9,7 +9,7 @@ import RouteDefinitions from '@/routes';
 import SidebarButton from './SidebarButton';
 
 const AgentsStudioButton = memo(() => {
-  const isOnAgentStudio = useMatch({ path: RouteDefinitions.AgentStudio });
+  const isOnAgentStudio = useMatch({ path: RouteDefinitions.AgentHub });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -19,7 +19,7 @@ const AgentsStudioButton = memo(() => {
     }
 
     // Navigate to Agent Studio page, preserving current location in state
-    navigate(RouteDefinitions.AgentStudio, {
+    navigate(RouteDefinitions.AgentHub, {
       state: { from: location.pathname },
     });
   }, [isOnAgentStudio, navigate, location.pathname]);
@@ -27,8 +27,8 @@ const AgentsStudioButton = memo(() => {
   return (
     <SidebarButton
       icon={<AgentStudioIcon sx={styles.icon} />}
-      label="Agents Studio"
-      tooltip="Agents Studio"
+      label="Agent HUB"
+      tooltip="Agent HUB"
       tourId={SIDEBAR_TOUR_TARGET_IDS.agentsStudio}
       onClick={handleAgentStudioClick}
       isActive={!!isOnAgentStudio}
