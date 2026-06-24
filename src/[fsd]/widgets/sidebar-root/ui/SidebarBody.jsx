@@ -85,7 +85,7 @@ const SidebarBody = memo(props => {
   const publicPermissionsSet = useMemo(() => new Set(publicPermissions), [publicPermissions]);
 
   const selectedItem = useMemo(() => {
-    if (pathname === RouteDefinitions.AgentStudio) {
+    if (pathname === RouteDefinitions.AgentHub) {
       return '';
     }
     const matchedRoute = SidebarConstants.RouteToSideBarItemMap.find(({ route }) =>

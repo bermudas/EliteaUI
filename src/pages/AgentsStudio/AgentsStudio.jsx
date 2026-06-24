@@ -215,7 +215,7 @@ const AgentsStudio = memo(() => {
         sx={styles.workspace}
       >
         <Category.GroupedCategory
-          title="Welcome to Agents Studio"
+          title="Welcome to Agent HUB"
           searchPlaceholder="Search for agents"
           noResultsTitle="No agents found"
           noResultsDescription="Try adjusting your search terms"

@@ -77,7 +77,7 @@ const RouteDefinitions = {
 
   Onboarding: '/onboarding',
   HelpCenter: '/help-center',
-  AgentStudio: '/agents-studio',
+  AgentHub: '/agents-hub',
 };
 
 export const BLOCK_NAV_PATTERNS = [

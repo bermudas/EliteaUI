@@ -67,7 +67,9 @@ const AgentModal = memo(props => {
   const link = useMemo(() => {
     const baseUrl = `${window.location.protocol}//${window.location.host}`;
     const basename = getBasename();
-    return agent ? `${baseUrl}${basename}/agents-studio?${AgentsStudioConstants.AGENT_ID}=${agent.id}` : '';
+    return agent
+      ? `${baseUrl}${basename}/${RouteDefinitions.AgentHub}?${AgentsStudioConstants.AGENT_ID}=${agent.id}`
+      : '';
   }, [agent]);
 
   const checkHeight = useCallback(() => {
