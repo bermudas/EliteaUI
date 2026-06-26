@@ -114,6 +114,7 @@ const ImportWizardModal = memo(props => {
         importSucceedData || forkedData ? (
           <IWModaSucceedlContent
             data={(importSucceedData || forkedData)?.agents ?? []}
+            skillsData={(importSucceedData || forkedData)?.skills ?? []}
             importErrorData={importErrorData}
             isForking={isForking}
           />
