@@ -270,26 +270,27 @@ const ProjectContextContent = memo(() => {
               </Box>
             )}
 
-            {canEditProjectContext && (
-              <Box sx={styles.actions}>
-                <Button.BaseBtn
-                  variant={BUTTON_VARIANTS.contained}
-                  color="primary"
-                  disabled={!isDirty || charError || isSaving}
-                  onClick={handleSave}
-                >
-                  Save
-                </Button.BaseBtn>
-                <Button.BaseBtn
-                  variant={BUTTON_VARIANTS.secondary}
-                  color="secondary"
-                  disabled={!isDirty}
-                  onClick={handleDiscard}
-                >
-                  Discard
-                </Button.BaseBtn>
-              </Box>
-            )}
+          </Box>
+        )}
+
+        {canEditProjectContext && (
+          <Box sx={styles.actions}>
+            <Button.BaseBtn
+              variant={BUTTON_VARIANTS.contained}
+              color="primary"
+              disabled={!isDirty || charError || isSaving}
+              onClick={handleSave}
+            >
+              Save
+            </Button.BaseBtn>
+            <Button.BaseBtn
+              variant={BUTTON_VARIANTS.secondary}
+              color="secondary"
+              disabled={!isDirty}
+              onClick={handleDiscard}
+            >
+              Discard
+            </Button.BaseBtn>
           </Box>
         )}
       </Box>
@@ -402,6 +403,7 @@ const componentStyles = (charError, isEditorFocused, isMuted) => ({
     gap: '0.75rem',
     paddingLeft: 0,
     paddingTop: '0.25rem',
+    marginTop: 'auto',
     width: '100%',
   },
 });
