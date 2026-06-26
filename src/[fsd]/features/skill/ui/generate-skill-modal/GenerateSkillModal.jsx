@@ -1,11 +1,11 @@
 import { memo, useCallback } from 'react';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { LATEST_VERSION_NAME } from '@/[fsd]/entities/version/lib/constants';
 import { GenerateEntityModal } from '@/[fsd]/entities/generate-entity-with-ai';
+import { LATEST_VERSION_NAME } from '@/[fsd]/entities/version/lib/constants';
 import { useGenerateSkillDraftMutation, useSkillCreateMutation } from '@/[fsd]/features/skill/api';
-import { SkillsTabs } from '@/common/constants';
+import { SearchParams, SkillsTabs } from '@/common/constants';
 import { useSelectedProjectId } from '@/hooks/useSelectedProject';
 import RouteDefinitions from '@/routes';
 
@@ -15,6 +15,7 @@ const GenerateSkillModal = memo(props => {
   const { open, onClose, onSkillCreated } = props;
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const projectId = useSelectedProjectId();
 
   const [createSkill] = useSkillCreateMutation();
@@ -59,10 +60,29 @@ const GenerateSkillModal = memo(props => {
         ],
       }).unwrap();
 
-      if (onSkillCreated) onSkillCreated(result);
-      else redirectToSkill(result.id, result.name);
+      if (onSkillCreated) {
+        onSkillCreated(result);
+        return;
+      }
+
+      const returnUrl = searchParams.get(SearchParams.ReturnUrl);
+      const sourceApplicationId = searchParams.get(SearchParams.SourceApplicationId);
+
+      if (returnUrl && sourceApplicationId && result?.id) {
+        const urlObj = new URL(decodeURIComponent(returnUrl), window.location.origin);
+
+        urlObj.searchParams.set('newSkillId', String(result.id));
+
+        setTimeout(() => {
+          navigate({ pathname: urlObj.pathname, search: urlObj.search }, { replace: true });
+        }, 0);
+
+        return;
+      }
+
+      redirectToSkill(result.id, result.name);
     },
-    [createSkill, redirectToSkill, onSkillCreated, projectId],
+    [createSkill, redirectToSkill, onSkillCreated, projectId, searchParams, navigate],
   );
 
   const renderReview = useCallback(
