@@ -13,7 +13,7 @@ import InfoIcon from '@/components/Icons/InfoIcon';
 const SKIPPED_TOOLKITS = 'skipped_toolkits';
 
 const IWModaSucceedlContent = memo(props => {
-  const { data, importErrorData, isForking } = props;
+  const { data, skillsData, importErrorData, isForking } = props;
   const styles = iWModaSucceedlContentStyles();
 
   const { validateToolkitImport } = useValidateToolkitImport();
@@ -22,6 +22,7 @@ const IWModaSucceedlContent = memo(props => {
     const pipelines = [];
     const agents = [];
     const toolkits = [];
+    const skills = [];
     const skipped_toolkits = [];
 
     data.forEach(dataItem => {
@@ -46,8 +47,12 @@ const IWModaSucceedlContent = memo(props => {
       });
     });
 
-    return { pipelines, agents, toolkits, skipped_toolkits };
-  }, [data, importErrorData?.toolkits, validateToolkitImport]);
+    skillsData.forEach(skillItem => {
+      skills.push(skillItem.name);
+    });
+
+    return { pipelines, agents, toolkits, skills, skipped_toolkits };
+  }, [data, skillsData, importErrorData?.toolkits, validateToolkitImport]);
 
   const invalidToolkits = useMemo(
     () => importedItems.toolkits.filter(i => !i.isValid),
