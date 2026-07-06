@@ -83,6 +83,7 @@ const ApplicationInformation = memo(props => {
               value={id}
               tooltip="Copy ID"
               copyMessage="The ID has been copied to the clipboard"
+              data-testid="copy-id"
             />
             {versionId !== undefined && (
               <CopyToClipboardButton

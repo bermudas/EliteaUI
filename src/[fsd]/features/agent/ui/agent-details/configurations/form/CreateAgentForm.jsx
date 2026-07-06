@@ -102,7 +102,8 @@ const CreateAgentForm = memo(props => {
         items={[
           {
             title: 'General',
-            summaryAction: entityType !== 'pipeline' ? <GenerateAgentButton onAgentCreated={onAgentCreated} /> : null,
+            summaryAction:
+              entityType !== 'pipeline' ? <GenerateAgentButton onAgentCreated={onAgentCreated} /> : null,
             content: (
               <Box sx={styles.accordionContent}>
                 <Box sx={styles.nameContainer}>
@@ -129,7 +130,7 @@ const CreateAgentForm = memo(props => {
                       onBlur={onNameBlur}
                       value={name}
                       required
-                      inputProps={{ maxLength: MAX_NAME_LENGTH }}
+                      inputProps={{ maxLength: MAX_NAME_LENGTH, 'data-testid': 'agent-name-input' }}
                       containerProps={{ flex: 1 }}
                       enableAutoBlur={false}
                     />
@@ -160,7 +161,10 @@ const CreateAgentForm = memo(props => {
                     error={formik.touched?.description && Boolean(formik.errors.description)}
                     helperText={formik.touched?.description && formik.errors.description}
                     disabled={isLoading}
-                    inputProps={{ maxLength: MAX_DESCRIPTION_LENGTH }}
+                    inputProps={{
+                      maxLength: MAX_DESCRIPTION_LENGTH,
+                      'data-testid': 'agent-description-input',
+                    }}
                     hasActionsToolBar
                     fieldName="Description"
                   />

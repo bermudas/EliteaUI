@@ -65,7 +65,10 @@ const WelcomeMessage = memo(props => {
                   id="welcome_message"
                   placeholder="Input your welcome message"
                   value={inputValue}
-                  inputProps={{ maxLength: MAX_WELCOME_MESSAGE_LENGTH }}
+                  inputProps={{
+                    maxLength: MAX_WELCOME_MESSAGE_LENGTH,
+                    'data-testid': 'agent-welcome-message-input',
+                  }}
                   showCharacterCounter
                   onChange={handleInput}
                   onFocus={() => toggleFieldFocus(PROMPT_PAYLOAD_KEY.welcomeMessage)}
@@ -73,11 +76,14 @@ const WelcomeMessage = memo(props => {
                   hasActionsToolBar
                   fieldName="Welcome message"
                   disabled={disabled}
+                  fullScreenButtonProps={{ 'data-testid': 'agent-welcome-message-expand' }}
+                  modalDataTestId="agent-welcome-message-dialog"
                 />
                 {isFocused(PROMPT_PAYLOAD_KEY.welcomeMessage) && inputValue.length > 0 && (
                   <Text.CharacterCounter
                     value={inputValue}
                     maxLength={MAX_WELCOME_MESSAGE_LENGTH}
+                    data-testid="agent-welcome-message-counter"
                   />
                 )}
               </Box>

@@ -1,8 +1,5 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-const getDomToImage = () => import('dom-to-image').then(m => m.default);
-const getSvgPanZoom = () => import('svg-pan-zoom').then(m => m.default);
-
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
 
@@ -18,6 +15,9 @@ import DotMenu from '../DotMenu';
 import DownloadIcon from '../Icons/DownloadIcon';
 import PlusIcon from '../Icons/PlusIcon';
 import './DiagramOutput.css';
+
+const getDomToImage = () => import('dom-to-image').then(m => m.default);
+const getSvgPanZoom = () => import('svg-pan-zoom').then(m => m.default);
 
 let diagramCount = 0;
 

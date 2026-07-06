@@ -2,8 +2,8 @@ import { memo, useCallback } from 'react';
 
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
 
-import { Box, Typography } from '@mui/material';
 import HelpOutlineRoundedIcon from '@mui/icons-material/HelpOutlineRounded';
+import { Box, Typography } from '@mui/material';
 
 import StyledTooltip from '@/ComponentsLib/Tooltip';
 import { SIDEBAR_TOUR_TARGET_IDS } from '@/[fsd]/features/interactive-tours/lib/constants';
@@ -87,9 +87,7 @@ const resourcesButtonStyles = (fullWidth, isActive) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: isActive
-      ? palette.background.button.drawerMenu.selected
-      : 'transparent',
+    background: isActive ? palette.background.button.drawerMenu.selected : 'transparent',
     '&:hover': {
       backgroundColor: palette.background.button.drawerMenu.hover,
     },

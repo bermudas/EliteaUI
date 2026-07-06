@@ -27,6 +27,8 @@ const ExpandedViewerModal = memo(props => {
     contentBackgroundSx,
     disableSelectLanguage,
     customButtons,
+    'data-testid': dataTestId,
+    closeButtonDataTestId,
     footer,
   } = props;
 
@@ -131,6 +133,8 @@ const ExpandedViewerModal = memo(props => {
       onClose={onClose}
       sx={styles.dialogPaper}
       dialogSx={[styles.dialogContent, contentBackgroundSx]}
+      data-testid={dataTestId}
+      closeButtonDataTestId={closeButtonDataTestId}
       footer={footer}
     />
   );

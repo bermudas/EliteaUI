@@ -92,6 +92,7 @@ const ConversationStarters = memo(props => {
 
   return (
     <BasicAccordion
+      data-testid="agent-conversation-starters-section"
       style={style}
       showMode={AccordionConstants.AccordionShowMode.LeftMode}
       accordionSX={styles.accordionSX}
@@ -126,16 +127,22 @@ const ConversationStarters = memo(props => {
                         hasActionsToolBar
                         disabled={disabled}
                         fieldName="Chat starter"
-                        inputProps={{ maxLength: MAX_CONVERSATION_STARTER_LENGTH }}
+                        inputProps={{
+                          maxLength: MAX_CONVERSATION_STARTER_LENGTH,
+                          'data-testid': 'agent-conversation-starter-input',
+                        }}
                         showCharacterCounter
                         inputRef={el => (inputRefs.current[index] = el)}
                         error={hasStarterError}
-                        helperText={hasStarterError ? 'Chat starter cannot be empty' : undefined}
+                        helperText={hasStarterError ? 'Conversation starter cannot be empty' : undefined}
+                        fullScreenButtonProps={{ 'data-testid': 'agent-conversation-starter-expand' }}
+                        modalDataTestId="agent-conversation-starter-dialog"
                       />
                       {isFocused(starterFocusId) && value.length > 0 && (
                         <Text.CharacterCounter
                           value={value}
                           maxLength={MAX_CONVERSATION_STARTER_LENGTH}
+                          data-testid="agent-conversation-starter-counter"
                         />
                       )}
                     </Box>
@@ -167,6 +174,7 @@ const ConversationStarters = memo(props => {
                 >
                   <Box sx={styles.addButtonWrapper}>
                     <BaseBtn
+                      data-testid="agent-conversation-starter-add"
                       variant={BUTTON_VARIANTS.iconLabel}
                       disabled={disableAdd}
                       onMouseDown={e => e.preventDefault()}

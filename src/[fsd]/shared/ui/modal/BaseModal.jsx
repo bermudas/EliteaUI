@@ -29,6 +29,8 @@ const BaseModal = memo(props => {
     cancelButtonText = 'Cancel',
     alarm = false,
     confirming = false,
+    'data-testid': dataTestId,
+    closeButtonDataTestId,
     footer,
   } = props;
 
@@ -115,6 +117,7 @@ const BaseModal = memo(props => {
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
       maxWidth={false}
+      data-testid={dataTestId}
       slotProps={{
         paper: {
           sx: [styles.dialogPaper, sx],
@@ -136,6 +139,7 @@ const BaseModal = memo(props => {
           <Button.BaseBtn
             variant={BUTTON_VARIANTS.tertiary}
             aria-label="Close"
+            data-testid={closeButtonDataTestId}
             startIcon={<CloseIcon />}
             onClick={onClose}
             sx={styles.closeButton}

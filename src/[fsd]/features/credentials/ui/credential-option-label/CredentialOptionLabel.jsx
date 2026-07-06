@@ -30,7 +30,11 @@ const CredentialOptionLabel = memo(props => {
           title={invalidMessage || 'Credential is unavailable or misconfigured'}
           placement="top"
         >
-          <Box sx={styles.attentionIconBox}>
+          <Box
+            data-testid="credential-status-indicator"
+            aria-label={invalidMessage || 'Credential is unavailable or misconfigured'}
+            sx={styles.attentionIconBox}
+          >
             <AttentionIcon />
           </Box>
         </Tooltip>
@@ -41,6 +45,8 @@ const CredentialOptionLabel = memo(props => {
           placement="top"
         >
           <BaseBtn
+            aria-label="Open in new tab"
+            data-testid="credential-open-in-new-tab-button"
             className="credential-action"
             variant={BUTTON_VARIANTS.tertiary}
             size="small"
@@ -61,6 +67,8 @@ const CredentialOptionLabel = memo(props => {
           placement="top"
         >
           <BaseBtn
+            aria-label="Reload and apply changes"
+            data-testid="credential-reload-button"
             className="credential-action"
             variant={BUTTON_VARIANTS.tertiary}
             size="small"
