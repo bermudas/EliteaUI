@@ -16,7 +16,8 @@ import { useGetToolkitNameFromSchema } from '@/[fsd]/features/pipelines/flow-edi
 import { useResolvedSharepointConfig } from '@/[fsd]/features/sharepoint/lib/hooks/useResolvedSharepointConfig.hooks';
 import { SharepointDelegatedLoginButton } from '@/[fsd]/features/sharepoint/ui';
 import { ToolkitFormHelpers, ToolkitsHelpers } from '@/[fsd]/features/toolkits/lib/helpers/index.js';
-import { Banner } from '@/[fsd]/shared/ui';
+import { ModalConstants } from '@/[fsd]/shared/lib/constants';
+import { Banner, Modal } from '@/[fsd]/shared/ui';
 import { TypographyWithConditionalTooltip } from '@/[fsd]/shared/ui/tooltip';
 import AttachIcon from '@/assets/attach-icon.svg?react';
 import OfflineIcon from '@/assets/offline-icon.svg?react';
@@ -25,7 +26,6 @@ import OpenInNewIcon from '@/assets/open-new-icon.svg?react';
 import RefreshIcon from '@/assets/refresh-icon.svg?react';
 import { PERMISSIONS, PUBLIC_PROJECT_ID, SearchParams, ViewMode } from '@/common/constants';
 import { buildErrorMessage } from '@/common/utils';
-import AlertDialog from '@/components/AlertDialog';
 import { StyledCircleProgress } from '@/components/Chat/StyledComponents';
 import CredentialWarningBanner from '@/components/CredentialWarningBanner';
 import EntityIcon from '@/components/EntityIcon';
@@ -620,13 +620,13 @@ const ToolCard = memo(props => {
             type={tool?.type}
             disabled={disabled}
           />
-          <AlertDialog
+          <Modal.DeleteEntityModal
             title={dialogTitle}
-            alertContent={dialogContent}
+            customContent={dialogContent}
             open={openAlert}
-            alarm
+            alarm={false}
+            titleIcon={ModalConstants.MODAL_ICON_TYPE.warning}
             onClose={onCloseAlert}
-            onCancel={onCloseAlert}
             onConfirm={onConfirmAlert}
             confirmButtonText="Remove"
           />
