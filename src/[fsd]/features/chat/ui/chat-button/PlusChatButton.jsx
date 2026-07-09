@@ -274,6 +274,7 @@ const PlusChatButton = memo(props => {
               sx: styles.toolFormControlLabel,
               labelPlacement: 'start',
             },
+            label: { sx: { whiteSpace: 'nowrap' } },
             switch: { size: 'small' },
           }}
         />
@@ -530,7 +531,7 @@ const plusChatButtonStyles = theme => ({
     overflow: 'hidden',
   },
   internalToolsPaper: {
-    minWidth: '12rem',
+    minWidth: '18.75rem',
     borderRadius: '.75rem',
     border: `.0625rem solid ${theme.palette.border.lines}`,
     backgroundColor: theme.palette.background.secondary,
@@ -539,7 +540,7 @@ const plusChatButtonStyles = theme => ({
   },
   toolFormControlLabel: {
     margin: 0,
-    width: '15.75rem',
+    width: '18.75rem',
     height: '2.75rem',
     boxSizing: 'border-box',
     display: 'flex',
@@ -549,6 +550,7 @@ const plusChatButtonStyles = theme => ({
 
     '& .MuiFormControlLabel-label': {
       marginLeft: '.5rem',
+      whiteSpace: 'nowrap',
     },
   },
   comingSoon: {
