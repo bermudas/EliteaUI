@@ -1,13 +1,13 @@
 import store from '@/[fsd]/app/store';
-import * as McpAuthHelpers from './mcpAuth.helpers';
-import * as McpAuthWindowHelpers from './mcpAuthWindow.helpers';
-import * as McpCryptoHelpers from './mcpCrypto.helpers';
-import * as McpDiscoveryHelpers from './mcpDiscovery.helpers';
 import { mcpOAuthApi } from '@/api/mcpOAuth';
 import { toolkitsApi } from '@/api/toolkits';
 import RouteDefinitions, { getBasename } from '@/routes';
 
 import { MCP_OAUTH_ERRORS } from '../constants/mcpAuthFlow.constants';
+import * as McpAuthHelpers from './mcpAuth.helpers';
+import * as McpAuthWindowHelpers from './mcpAuthWindow.helpers';
+import * as McpCryptoHelpers from './mcpCrypto.helpers';
+import * as McpDiscoveryHelpers from './mcpDiscovery.helpers';
 
 const getRedirectUri = () => {
   const baseUrl = `${window.location.protocol}//${window.location.host}`;
@@ -48,6 +48,7 @@ const buildOAuthMetadata = (tokenInfo, clientId, clientSecret, projectId, toolki
   client_secret: clientSecret,
   project_id: projectId || tokenInfo.project_id,
   toolkit_id: toolkitId || tokenInfo.toolkit_id,
+  used_dcr: tokenInfo.used_dcr || undefined,
   authorization_endpoint: tokenInfo.authorization_endpoint,
   revocation_endpoint: tokenInfo.revocation_endpoint,
   registration_endpoint: tokenInfo.registration_endpoint,
@@ -75,20 +76,30 @@ export const triggerProactiveRefresh = serverUrl => {
       const credentials = resolveCredentials(serverUrl, tokenInfo);
       let { clientId, clientSecret, tokenEndpoint } = credentials;
 
-      // Try fetching from toolkit API if no credentials found
-      if (!clientId && tokenInfo?.toolkit_id && tokenInfo?.project_id) {
-        const apiCredentials = await fetchToolkitCredentials(tokenInfo);
-        if (apiCredentials) {
-          clientId = apiCredentials.clientId;
-          clientSecret = apiCredentials.clientSecret;
-          tokenEndpoint = apiCredentials.tokenEndpoint || tokenEndpoint;
+      // When DCR was used, the stored client_id and client_secret are the dynamically
+      // registered credentials — never overwrite them with toolkit DB values.
+      if (!tokenInfo?.used_dcr) {
+        // Try fetching from toolkit API if no credentials found
+        if (!clientId && tokenInfo?.toolkit_id && tokenInfo?.project_id) {
+          const apiCredentials = await fetchToolkitCredentials(tokenInfo);
+          if (apiCredentials) {
+            clientId = apiCredentials.clientId;
+            clientSecret = apiCredentials.clientSecret;
+            tokenEndpoint = apiCredentials.tokenEndpoint || tokenEndpoint;
+          }
         }
-      }
 
-      // Fallback to stored token info
-      if (!clientId && tokenInfo?.client_id) {
-        clientId = tokenInfo.client_id;
-        clientSecret = clientSecret || tokenInfo.client_secret;
+        // Fallback to stored token info
+        if (!clientId && tokenInfo?.client_id) {
+          clientId = tokenInfo.client_id;
+          clientSecret = clientSecret || tokenInfo.client_secret;
+        }
+      } else {
+        // DCR: always use the stored dynamic credentials — never fall back to the toolkit DB
+        // values, because the DB holds the developer-app secret which is a different OAuth client.
+        // clientSecret may be null when the DCR client was registered as a true public client.
+        clientId = tokenInfo.client_id || clientId;
+        clientSecret = tokenInfo.client_secret;
       }
 
       if (!tokenEndpoint) {
@@ -105,6 +116,7 @@ export const triggerProactiveRefresh = serverUrl => {
         client_id: clientId || undefined,
         client_secret: clientSecret || undefined,
         toolkit_id: tokenInfo.toolkit_id,
+        used_dcr: tokenInfo.used_dcr || undefined,
       };
 
       const tokenResult = await store.dispatch(
@@ -146,7 +158,7 @@ export const triggerProactiveRefresh = serverUrl => {
 };
 
 export const refreshAccessToken = async options => {
-  const { serverUrl, tokenEndpoint, clientId, clientSecret, projectId, toolkitId } = options;
+  const { serverUrl, tokenEndpoint, clientId, clientSecret, projectId, toolkitId, usedDcr } = options;
 
   const refreshToken = McpAuthHelpers.getRefreshToken(serverUrl);
   if (!refreshToken) {
@@ -163,6 +175,7 @@ export const refreshAccessToken = async options => {
     client_id: clientId || undefined,
     client_secret: clientSecret || undefined,
     toolkit_id: toolkitId || undefined,
+    used_dcr: usedDcr || undefined,
   };
 
   const tokenResult = await store.dispatch(mcpOAuthApi.endpoints.refreshMcpOAuthToken.initiate(requestBody));
@@ -199,6 +212,7 @@ export const refreshAccessToken = async options => {
       client_secret: clientSecret,
       project_id: projectId,
       toolkit_id: toolkitId,
+      used_dcr: usedDcr || undefined,
     },
   );
 
@@ -206,7 +220,7 @@ export const refreshAccessToken = async options => {
 };
 
 export const getValidAccessToken = async options => {
-  const { serverUrl, tokenEndpoint, clientId, clientSecret, projectId, toolkitId } = options;
+  const { serverUrl, tokenEndpoint, clientId, clientSecret, projectId, toolkitId, usedDcr } = options;
 
   // Check if we have a valid token
   const accessToken = McpAuthHelpers.getAccessToken(serverUrl);
@@ -224,6 +238,7 @@ export const getValidAccessToken = async options => {
         clientSecret,
         projectId,
         toolkitId,
+        usedDcr,
       });
       return result.access_token;
     } catch (error) {
@@ -343,15 +358,35 @@ export const startMcpAuthFlow = async options => {
     // Track if we used DCR (needed for token exchange logic)
     let usedDCR = false;
 
-    if (supportsDCR && !clientId) {
-      // Flow 1: Server supports DCR and no client credentials provided
+    // Aha! MCP server categorically requires DCR-issued tokens — pre-registered OAuth
+    // app credentials produce REST API tokens that the MCP endpoint will reject.
+    const isAhaHost = u => {
+      try {
+        const h = new URL(u).hostname;
+        return h === 'aha.io' || h.endsWith('.aha.io');
+      } catch {
+        return false;
+      }
+    };
+    const requiresDCR = supportsDCR && (!clientId || [registrationEndpoint, serverUrl].some(isAhaHost));
+
+    // dcrClientSecret holds any secret issued by the DCR registration.
+    // Some providers (e.g. Aha!) still issue a client_secret even when
+    // token_endpoint_auth_method=none — it must be sent during token exchange.
+    let dcrClientSecret = null;
+
+    if (requiresDCR) {
+      // Flow 1: Server supports DCR (and either no client_id is set, or the server
+      // mandates DCR regardless of pre-configured credentials, e.g. Aha!)
       // → Use Dynamic Client Registration flow via backend proxy
       const redirectUri = getRedirectUri();
-      clientId = await McpDiscoveryHelpers.registerDynamicClient(
+      const dcrResult = await McpDiscoveryHelpers.registerDynamicClient(
         registrationEndpoint,
         redirectUri,
         projectId,
       );
+      clientId = dcrResult.clientId;
+      dcrClientSecret = dcrResult.clientSecret;
       usedDCR = true;
     } else if (!supportsDCR && !clientId) {
       // Flow 2: Server does NOT support DCR and no client credentials provided
@@ -373,6 +408,7 @@ export const startMcpAuthFlow = async options => {
 
     // Use PKCE if server supports it (regardless of client secret)
     // Many servers require PKCE even for confidential clients
+    // PKCE is only applicable to the code flow
     const serverSupportsPKCE = asMetadata.code_challenge_methods_supported?.includes('S256');
     const usePKCE = serverSupportsPKCE || !clientSecret;
     let codeVerifier, codeChallenge;
@@ -408,7 +444,7 @@ export const startMcpAuthFlow = async options => {
     // Navigate popup to auth URL
     McpAuthWindowHelpers.navigateAuthPopup(authWindow, authUrl);
 
-    // Wait for authorization result (popup will return the authorization code via postMessage)
+    // Wait for authorization result (popup will return the authorization code or token via postMessage)
     const result = await waitForAuthorizationResult(authWindow, state);
 
     // Result should contain the authorization code from the popup
@@ -423,6 +459,11 @@ export const startMcpAuthFlow = async options => {
     // - If remote MCP: Send whatever credentials were provided
     const shouldSendCredentials = usedDCR || !isPrebuildMcp;
 
+    // When DCR was used: send dcrClientSecret (issued during registration, may be null for
+    // true public clients). Never fall back to the pre-configured developer-app clientSecret —
+    // that secret belongs to a different OAuth client and will cause "unknown client".
+    const effectiveClientSecret = usedDCR ? dcrClientSecret : clientSecret;
+
     const requestBody = {
       projectId: projectId || 1,
       token_endpoint: tokenEndpoint,
@@ -431,12 +472,14 @@ export const startMcpAuthFlow = async options => {
       redirect_uri: redirectUri,
       // Send client_id only if: (1) we used DCR, or (2) it's not a pre-built MCP
       client_id: shouldSendCredentials ? clientId || undefined : undefined,
-      // Send client_secret only if: (1) it's not a pre-built MCP, or (2) we used DCR (rare)
-      client_secret: shouldSendCredentials ? clientSecret || undefined : undefined,
+      // When DCR was used: send the secret issued during DCR (null for true public clients).
+      // When DCR was NOT used: send pre-configured clientSecret (if any).
+      client_secret: shouldSendCredentials ? effectiveClientSecret || undefined : undefined,
       code_verifier: usePKCE ? codeVerifier : undefined,
       scope: normalizedScope || undefined,
       toolkit_id: toolkitId || undefined,
       toolkit_type: isPrebuildMcp ? toolkitType : undefined,
+      used_dcr: usedDCR || undefined,
     };
     const tokenResult = await store.dispatch(
       mcpOAuthApi.endpoints.exchangeMcpOAuthToken.initiate(requestBody),
@@ -472,9 +515,10 @@ export const startMcpAuthFlow = async options => {
         // Core fields for token refresh
         token_endpoint: tokenEndpoint,
         client_id: clientId,
-        client_secret: clientSecret,
+        client_secret: effectiveClientSecret,
         project_id: projectId,
         toolkit_id: toolkitId,
+        used_dcr: usedDCR || undefined,
         // Additional OAuth metadata from mcp_authorization_required message
         // These are useful for future operations (revocation, re-auth, etc.)
         ...(providedOauthMetadata && {

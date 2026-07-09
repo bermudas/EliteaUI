@@ -72,7 +72,7 @@ const DCR_REQUEST_DEFAULTS = {
  * @param {string} registrationEndpoint - The OAuth registration endpoint URL
  * @param {string} redirectUri - The redirect URI for the client
  * @param {number} projectId - The project ID for the proxy API
- * @returns {Promise<string>} - The client_id from the registration response
+ * @returns {Promise<{clientId: string, clientSecret: string|null}>} - The client_id and client_secret (if issued) from the registration response
  */
 export const registerDynamicClient = async (registrationEndpoint, redirectUri, projectId) => {
   const requestBody = {
@@ -100,5 +100,12 @@ export const registerDynamicClient = async (registrationEndpoint, redirectUri, p
     throw new Error('Registration response missing client_id');
   }
 
-  return registration.client_id;
+  // Return both client_id and client_secret (if issued).
+  // Some providers (e.g. Aha!) issue a client_secret even for DCR public-client requests
+  // with token_endpoint_auth_method=none. If we drop it the token exchange fails with
+  // "unknown client" because the server expects it to be echoed back.
+  return {
+    clientId: registration.client_id,
+    clientSecret: registration.client_secret || null,
+  };
 };
