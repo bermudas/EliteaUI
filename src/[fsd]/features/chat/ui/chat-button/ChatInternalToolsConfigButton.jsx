@@ -129,6 +129,7 @@ const styles = {
 
     '& .MuiFormControlLabel-label': {
       marginLeft: '.5rem',
+      whiteSpace: 'nowrap',
     },
   },
 };
