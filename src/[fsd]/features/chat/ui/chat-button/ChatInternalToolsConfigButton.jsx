@@ -85,6 +85,7 @@ const ChatInternalToolsConfigButton = memo(props => {
                     sx: styles.formControlLabel,
                     labelPlacement: 'start',
                   },
+                  label: { sx: { whiteSpace: 'nowrap' } },
                   switch: { size: 'small' },
                 }}
               />
@@ -110,7 +111,7 @@ const styles = {
     zIndex: 9998,
   },
   paper: {
-    minWidth: 288,
+    minWidth: 300,
     borderRadius: '.5rem',
     border: ({ palette }) => `.0625rem solid ${palette.border.lines}`,
     boxShadow: ({ palette }) => palette.boxShadow.default,
